@@ -1,4 +1,4 @@
 /log/
-
+# Rust
 /target/
 **/*.rs.bk

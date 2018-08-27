@@ -24,9 +24,10 @@ fn main() {
         parser.set_description("Simple RESTful webserver for logging and visualizing network access times.");
         parser.refer(&mut interval).add_option(&["-i", "--interval"], Store, "Ping Interval");
         parser.refer(&mut ping_host).add_option(&["-p", "--ping-host"], Store, "Host for ping requests");
-        parser.refer(&mut log_dir).add_option(&["-l", "--log"], Store, "Directory for the log files");
-        parser.refer(&mut web_host).add_option(&["-h", "--web-host"], Store, "Host ip for the webserver");
-        parser.refer(&mut web_dir).add_option(&["-w", "--web"], Store, "Web server root directory");
+        parser.refer(&mut log_dir).add_option(&["-l", "--logs"], Store, "Directory for the log files");
+        parser.refer(&mut web_host).add_option(&["-w", "--web-host"], Store, "Host ip for the webserver");
+        parser.refer(&mut web_dir).add_option(&["-r", "--web-root"], Store, "Web server root directory");
+        parser.parse_args_or_exit();
     }
 
     {
