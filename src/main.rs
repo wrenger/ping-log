@@ -1,6 +1,7 @@
 extern crate chrono;
 extern crate argparse;
 
+mod ping;
 mod ping_web;
 mod ping_stats;
 mod ping_request;
@@ -22,7 +23,7 @@ fn main() {
     {
         let mut parser = ArgumentParser::new();
         parser.set_description("Simple RESTful webserver for logging and visualizing network access times.");
-        parser.refer(&mut interval).add_option(&["-i", "--interval"], Store, "Ping Interval");
+        parser.refer(&mut interval).add_option(&["-i", "--interval"], Store, "Ping interval in seconds");
         parser.refer(&mut ping_host).add_option(&["-p", "--ping-host"], Store, "Host for ping requests");
         parser.refer(&mut log_dir).add_option(&["-l", "--logs"], Store, "Directory for the log files");
         parser.refer(&mut web_host).add_option(&["-w", "--web-host"], Store, "Host ip for the webserver");

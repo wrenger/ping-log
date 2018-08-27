@@ -2,6 +2,8 @@ extern crate chrono;
 
 use self::chrono::prelude::*;
 
+use super::ping::{Ping};
+
 use std::path::Path;
 use std::fs::{OpenOptions};
 use std::io::{Result, Write};
@@ -10,14 +12,17 @@ use std::process::Command;
 
 pub fn ping_request(host: &String, log_dir: &String) {
     let log = perform_request(host);
-    match write_request(log_dir.clone() + "/180827.txt", log) {
+
+    let file_name = Local::now().format("/%y%m%d.txt").to_string();
+
+    match write_request(log_dir.clone() + file_name.as_str(), log) {
         Err(e) => { eprintln!("fs log error: {}", e) },
         _ => { println!("Update log.") }
     }
 }
 
 
-fn perform_request(host: &String) -> (i64, f64) {
+fn perform_request(host: &String) -> Ping {
     let time = Local::now().timestamp();
     let output = Command::new("ping")
             .args(&["-c 1", "-w 1", host])
@@ -29,7 +34,7 @@ fn perform_request(host: &String) -> (i64, f64) {
     }
 
     let ping = parse_output(String::from_utf8(output.stdout).unwrap_or("".to_string()));
-    (time, ping)
+    Ping::new(time, ping)
 }
 
 fn parse_output(output: String) -> f64 {
@@ -46,12 +51,12 @@ fn parse_output(output: String) -> f64 {
     1000.0
 }
 
-fn write_request<P: AsRef<Path>>(path: P, log: (i64, f64)) -> Result<()> {
+fn write_request<P: AsRef<Path>>(path: P, log: Ping) -> Result<()> {
     let mut file = OpenOptions::new()
             .create(true)
             .write(true)
             .append(true)
             .open(path)?;
-    file.write_fmt(format_args!("{} {}\n", log.0, log.1))?;
+    file.write_fmt(format_args!("{} {}\n", log.time, log.latency))?;
     Ok(())
 }
