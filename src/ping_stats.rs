@@ -2,20 +2,33 @@ extern crate serde_json;
 
 use self::serde_json::*;
 
-use super::ping::{Ping};
+use super::ping::Ping;
 
+use std::fs::{read_dir, write, File};
+use std::io::{BufRead, BufReader, Result};
 use std::path::Path;
-use std::fs::{File, read_dir, write};
-use std::io::{Result, BufRead, BufReader};
-
 
 pub fn generate_statistics(log_dir: &String, web_dir: &String) {
     let data = generate_json(log_dir);
     match write(web_dir.clone() + "/data.json", data) {
-        Err(e) => { eprintln!("fs data error: {}", e); }
-        _ => { println!("Update data.") }
+        Err(e) => {
+            eprintln!("fs data error: {}", e);
+        }
+        _ => println!("Update data."),
     };
 }
+
+pub fn log_files<P: AsRef<Path>>(dir: P) -> Vec<String> {
+    let mut files = read_dir(dir)
+        .map(|f| {
+            f.filter_map(|s| s.ok().map(|s| s.path().to_string_lossy().into_owned()))
+                .collect::<Vec<_>>()
+        })
+        .unwrap_or(vec![]);
+    files.sort();
+    files
+}
+
 
 fn generate_json(log_dir: &String) -> String {
     let files = log_files(log_dir);
@@ -27,6 +40,16 @@ fn generate_json(log_dir: &String) -> String {
         "files": files
     });
     data.to_string()
+}
+
+fn read_log(files: &[String]) -> Result<Vec<Ping>> {
+    let mut log = Vec::with_capacity(3 * 60 * 24);
+    let max = 1 + 3.min(files.len());
+    for i in 1..max {
+        let mut daily_log = read_log_file(&files[files.len() - i])?;
+        log.append(&mut daily_log);
+    }
+    Ok(log)
 }
 
 fn read_log_file(file: &str) -> Result<Vec<Ping>> {
@@ -48,19 +71,17 @@ fn read_log_file(file: &str) -> Result<Vec<Ping>> {
     Ok(log)
 }
 
-
-fn read_log(files: &[String]) -> Result<Vec<Ping>> {
-    let mut log = Vec::with_capacity(3 * 60 * 24);
-    let max = 1 + 3.min(files.len());
-    for i in 1..max {
-        let mut daily_log = read_log_file(&files[files.len() - i])?;
-        log.append(&mut daily_log);
-    }
-    Ok(log)
+fn generate_log(log: &Vec<Ping>) -> Vec<(String, f64)> {
+    log.into_iter()
+        .take(60)
+        .map(Ping::tuple)
+        .collect::<Vec<_>>()
 }
 
-fn generate_log(log: &Vec<Ping>) -> Vec<(String, f64)> {
-    log.into_iter().take(60).map(Ping::tuple).collect::<Vec<_>>()
+fn generate_history(log: &[Ping]) -> Vec<(String, f64, f64, f64, i32)> {
+    log.chunks(60)
+        .map(|c| generate_stats(c))
+        .collect::<Vec<_>>()
 }
 
 fn generate_stats(log: &[Ping]) -> (String, f64, f64, f64, i32) {
@@ -87,16 +108,3 @@ fn generate_stats(log: &[Ping]) -> (String, f64, f64, f64, i32) {
 
     (log[0].time_string(), min, max, avg, lost)
 }
-
-fn generate_history(log: &[Ping]) -> Vec<(String, f64, f64, f64, i32)> {
-    log.chunks(60).map(|c| generate_stats(c)).collect::<Vec<_>>()
-}
-
-fn log_files<P: AsRef<Path>>(dir: P) -> Vec<String> {
-    let mut files = read_dir(dir).map(|f| f.filter_map(|s|
-            s.ok().map(|s| s.path().to_string_lossy().into_owned())
-        ).collect::<Vec<_>>()).unwrap_or(vec![]);
-    files.sort();
-    files
-}
-

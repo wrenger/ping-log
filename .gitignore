@@ -1,4 +1,6 @@
+# temp
 /log/
+/www/data.json
 # Rust
 /target/
 **/*.rs.bk

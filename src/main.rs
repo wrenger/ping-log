@@ -7,7 +7,7 @@ mod ping_stats;
 mod ping_request;
 
 use std::thread;
-use std::time::{Duration};
+use std::time::Duration;
 
 use self::chrono::prelude::*;
 use argparse::{ArgumentParser, Store};
@@ -30,6 +30,7 @@ fn main() {
         parser.refer(&mut web_dir).add_option(&["-r", "--web-root"], Store, "Web server root directory");
         parser.parse_args_or_exit();
     }
+    let web_host = web_host.parse().unwrap();
 
     {
         let ping_host = ping_host.clone();
@@ -46,7 +47,6 @@ fn main() {
             }
         });
     }
-    let web_host = web_host.parse().unwrap();
     ping_web::run_webserver(web_host, &web_dir, &log_dir);
 }
 

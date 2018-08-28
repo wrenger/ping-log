@@ -5,15 +5,12 @@ use self::chrono::prelude::*;
 #[derive(Debug)]
 pub struct Ping {
     pub time: i64,
-    pub latency: f64
+    pub latency: f64,
 }
 
 impl Ping {
-    pub fn new(time: i64, latency: f64) -> Ping{
-        Ping {
-            time,
-            latency
-        }
+    pub fn new(time: i64, latency: f64) -> Ping {
+        Ping { time, latency }
     }
 
     pub fn date_time(&self) -> DateTime<Local> {
