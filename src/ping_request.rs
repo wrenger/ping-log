@@ -24,7 +24,7 @@ pub fn ping_request(host: &String, log_dir: &String) {
 fn perform_request(host: &String) -> Ping {
     let time = Local::now().timestamp();
     let output = Command::new("ping")
-        .args(&["-c 1", "-w 1", host])
+        .args(&["-c 1", "-w 1", &host])
         .output()
         .expect("failed to execute bash 'ping' command!");
 

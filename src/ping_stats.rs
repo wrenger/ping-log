@@ -89,9 +89,10 @@ fn generate_history(log: &[Ping]) -> Vec<(String, f64, f64, f64, String)> {
         until = until - Duration::minutes(until.minute().into());
         until = until - Duration::seconds(until.second().into());
         until = until - Duration::nanoseconds(until.nanosecond().into());
+        let mut until_ts = until.timestamp();
 
         for l in log {
-            if l.date_time() < until {
+            if l.time < until_ts {
                 let time_range = until.format("%d.%m.%y %H").to_string()
                     + (until + chrono::Duration::hours(1))
                         .format(" - %Hh")
@@ -102,6 +103,7 @@ fn generate_history(log: &[Ping]) -> Vec<(String, f64, f64, f64, String)> {
 
                 start = end;
                 until = until - chrono::Duration::hours(1);
+                until_ts = until.timestamp();
             } else {
                 end += 1;
             }
