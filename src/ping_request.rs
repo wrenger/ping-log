@@ -26,10 +26,10 @@ fn perform_request(host: &String) -> Ping {
     let output = Command::new("ping")
         .args(&["-c 1", "-w 1", host])
         .output()
-        .expect("failed to execute ping");
+        .expect("failed to execute bash 'ping' command!");
 
     if !output.stderr.is_empty() {
-        eprintln!("Command error: {}", String::from_utf8_lossy(&output.stderr));
+        eprintln!("bash 'ping' error: {}", String::from_utf8_lossy(&output.stderr));
     }
 
     let ping = parse_output(String::from_utf8(output.stdout).unwrap_or("".to_string()));
@@ -44,7 +44,7 @@ fn parse_output(output: String) -> f64 {
         let end = line.rfind(' ');
         if start.is_some() && end.is_some() {
             let ping_str = &line[start.unwrap() + 1..end.unwrap()];
-            return ping_str.parse::<f64>().unwrap_or(1000.0);
+            return ping_str.parse().unwrap_or(1000.0);
         }
     }
     1000.0

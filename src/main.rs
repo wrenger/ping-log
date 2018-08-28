@@ -9,7 +9,7 @@ mod ping_request;
 use std::thread;
 use std::time::Duration;
 
-use self::chrono::prelude::*;
+use self::chrono::{Local, Timelike};
 use argparse::{ArgumentParser, Store};
 
 
@@ -17,8 +17,8 @@ fn main() {
     let mut interval = 60;
     let mut ping_host = String::from("8.8.8.8");
     let mut web_host = String::from("127.0.0.1:8081");
-    let mut log_dir = String::from("./log");
-    let mut web_dir = String::from("./www");
+    let mut log_dir = String::from("log");
+    let mut web_dir = String::from("www");
 
     {
         let mut parser = ArgumentParser::new();
@@ -37,14 +37,12 @@ fn main() {
         let log_dir = log_dir.clone();
         let web_dir = web_dir.clone();
 
-        thread::spawn(move || {
-            loop {
-                ping_request::ping_request(&ping_host, &log_dir);
-                ping_stats::generate_statistics(&log_dir, &web_dir);
+        thread::spawn(move || loop {
+            let current_seconds = Local::now().second();
+            thread::sleep(Duration::from_secs((interval - current_seconds) as u64));
 
-                let current_seconds = Local::now().second();
-                thread::sleep(Duration::from_secs((interval - current_seconds) as u64));
-            }
+            ping_request::ping_request(&ping_host, &log_dir);
+            ping_stats::generate_statistics(&log_dir, &web_dir);
         });
     }
     ping_web::run_webserver(web_host, &web_dir, &log_dir);

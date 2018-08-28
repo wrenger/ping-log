@@ -1,9 +1,12 @@
+extern crate chrono;
 extern crate serde_json;
 
+use self::chrono::{Duration, Timelike};
 use self::serde_json::*;
 
 use super::ping::Ping;
 
+use std::f64::NAN;
 use std::fs::{read_dir, write, File};
 use std::io::{BufRead, BufReader, Result};
 use std::path::Path;
@@ -28,7 +31,6 @@ pub fn log_files<P: AsRef<Path>>(dir: P) -> Vec<String> {
     files.sort();
     files
 }
-
 
 fn generate_json(log_dir: &String) -> String {
     let files = log_files(log_dir);
@@ -59,11 +61,11 @@ fn read_log_file(file: &str) -> Result<Vec<Ping>> {
         let line = line?;
         let values = line.splitn(2, ' ').collect::<Vec<_>>();
         if values.len() == 2 {
-            let time = values[0].parse::<f64>();
+            let time = values[0].parse::<i64>();
             let ping = values[1].parse::<f64>();
 
             if time.is_ok() && ping.is_ok() {
-                log.push(Ping::new(time.unwrap() as i64, ping.unwrap()));
+                log.push(Ping::new(time.unwrap(), ping.unwrap()));
             }
         }
     }
@@ -78,13 +80,38 @@ fn generate_log(log: &Vec<Ping>) -> Vec<(String, f64)> {
         .collect::<Vec<_>>()
 }
 
-fn generate_history(log: &[Ping]) -> Vec<(String, f64, f64, f64, i32)> {
-    log.chunks(60)
-        .map(|c| generate_stats(c))
-        .collect::<Vec<_>>()
+fn generate_history(log: &[Ping]) -> Vec<(String, f64, f64, f64, String)> {
+    let mut chunks: Vec<(String, f64, f64, f64, String)> = vec![];
+    if log.len() > 0 {
+        let mut start = 0;
+        let mut end = 0;
+        let mut until = log[0].date_time();
+        until = until - Duration::minutes(until.minute().into());
+        until = until - Duration::seconds(until.second().into());
+        until = until - Duration::nanoseconds(until.nanosecond().into());
+
+        for l in log {
+            if l.date_time() < until {
+                let time_range = until.format("%d.%m.%y %H").to_string()
+                    + (until + chrono::Duration::hours(1))
+                        .format(" - %Hh")
+                        .to_string()
+                        .as_str();
+                let stats = generate_stats(&log[start..end]);
+                chunks.push((time_range, stats.0, stats.1, stats.2, stats.3));
+
+                start = end;
+                until = until - chrono::Duration::hours(1);
+            } else {
+                end += 1;
+            }
+        }
+    }
+
+    chunks
 }
 
-fn generate_stats(log: &[Ping]) -> (String, f64, f64, f64, i32) {
+fn generate_stats(log: &[Ping]) -> (f64, f64, f64, String) {
     let mut min = 1000.0;
     let mut max = 0.0;
     let mut sum = 0.0;
@@ -106,5 +133,12 @@ fn generate_stats(log: &[Ping]) -> (String, f64, f64, f64, i32) {
 
     let avg = ((sum * 100.0) / (log.len() - lost as usize) as f64).round() as f64 / 100.0;
 
-    (log[0].time_string(), min, max, avg, lost)
+    if min >= 1000.0 {
+        min = NAN;
+    }
+    if max <= 0.0 {
+        max = NAN;
+    }
+
+    (min, max, avg, format!("{} / {}", lost, log.len()))
 }
