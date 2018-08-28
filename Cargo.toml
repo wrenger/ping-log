@@ -7,5 +7,5 @@ authors = ["Lars Wrenger <lars@wrenger.net>"]
 hyper = "0.12.8"
 futures = "0.1.23"
 serde_json = "1.0.26"
-chrono = "0.4.5"
+chrono = "0.4.6"
 argparse = "0.2.1"
