@@ -16,8 +16,8 @@ pub fn ping_request(host: &String, log_dir: &String) {
     let file_name = Local::now().format("/%y%m%d.txt").to_string();
 
     match write_request(log_dir.clone() + file_name.as_str(), log) {
-        Err(e) => eprintln!("fs log error: {}", e),
-        _ => println!("Update log."),
+        Err(e) => eprintln!("write log error: {}", e),
+        _ => println!("update log."),
     }
 }
 
@@ -26,10 +26,13 @@ fn perform_request(host: &String) -> Ping {
     let output = Command::new("ping")
         .args(&["-c 1", "-w 1", &host])
         .output()
-        .expect("failed to execute bash 'ping' command!");
+        .expect("failed to execute bash 'ping' command: {}");
 
     if !output.stderr.is_empty() {
-        eprintln!("bash 'ping' error: {}", String::from_utf8_lossy(&output.stderr));
+        eprintln!(
+            "bash 'ping' error: {}",
+            String::from_utf8_lossy(&output.stderr)
+        );
     }
 
     let ping = parse_output(String::from_utf8(output.stdout).unwrap_or("".to_string()));

@@ -29,3 +29,9 @@ impl Ping {
         (self.time_string(), self.latency)
     }
 }
+
+impl Clone for Ping {
+    fn clone(&self) -> Ping {
+        Ping::new(self.time, self.latency)
+    }
+}

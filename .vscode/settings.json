@@ -3,7 +3,7 @@
         "**/.git/objects/**": true,
         "**/.git/subtree-cache/**": true,
         "**/node_modules/**": true,
-        "./target/**": true,
-        "./log/**": true
+        "**/target/**": true,
+        "**/log/**": true
     }
 }

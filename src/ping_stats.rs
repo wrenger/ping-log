@@ -12,12 +12,15 @@ use std::io::{BufRead, BufReader, Result};
 use std::path::Path;
 
 pub fn generate_statistics(log_dir: &String, web_dir: &String) {
-    let data = generate_json(log_dir);
+    let files = log_files(log_dir);
+    let log = read_log(&files).unwrap_or(vec![]);
+
+    let data = generate_json(&log, &files);
     match write(web_dir.clone() + "/data.json", data) {
         Err(e) => {
-            eprintln!("fs data error: {}", e);
+            eprintln!("write data error: {}", e);
         }
-        _ => println!("Update data."),
+        _ => println!("update data."),
     };
 }
 
@@ -32,10 +35,7 @@ pub fn log_files<P: AsRef<Path>>(dir: P) -> Vec<String> {
     files
 }
 
-fn generate_json(log_dir: &String) -> String {
-    let files = log_files(log_dir);
-    let log = read_log(&files).unwrap_or(vec![]);
-
+fn generate_json(log: &Vec<Ping>, files: &[String]) -> String {
     let data = json!({
         "log":  generate_log(&log),
         "history": generate_history(&log),
@@ -61,11 +61,10 @@ fn read_log_file(file: &str) -> Result<Vec<Ping>> {
         let line = line?;
         let values = line.splitn(2, ' ').collect::<Vec<_>>();
         if values.len() == 2 {
-            let time = values[0].parse::<i64>();
-            let ping = values[1].parse::<f64>();
-
-            if time.is_ok() && ping.is_ok() {
-                log.push(Ping::new(time.unwrap(), ping.unwrap()));
+            if let Ok(time) = values[0].parse::<i64>() {
+                if let Ok(ping) = values[1].parse::<f64>() {
+                    log.push(Ping::new(time, ping));
+                }
             }
         }
     }
@@ -143,4 +142,60 @@ fn generate_stats(log: &[Ping]) -> (f64, f64, f64, String) {
     }
 
     (min, max, avg, format!("{} / {}", lost, log.len()))
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    #[test]
+    fn test_generate_log() {
+        let log = vec![Ping::new(1535839466, 20.0)];
+        let generated = generate_log(&log);
+        assert_eq!("02.09.18 00:04", generated[0].0);
+        assert_eq!(log[0].latency, generated[0].1);
+
+        assert_eq!(1, generated.len());
+
+        let log = vec![Ping::new(1535839466, 23.05); 62];
+        let generated = generate_log(&log);
+
+        assert_eq!("02.09.18 00:04", generated[0].0);
+        assert_eq!(log[0].latency, generated[0].1);
+
+        assert_eq!(60, generated.len());
+    }
+
+    #[test]
+    fn test_generate_stats() {
+        let generated = generate_stats(&vec![]);
+        assert!(generated.0.is_nan());
+        assert!(generated.1.is_nan());
+        assert!(generated.2.is_nan());
+        assert_eq!("0 / 0", generated.3);
+
+        let log = vec![Ping::new(0, 20.0)];
+
+        let generated = generate_stats(&log);
+        assert_eq!(20.0, generated.0);
+        assert_eq!(20.0, generated.1);
+        assert_eq!(20.0, generated.2);
+        assert_eq!("0 / 1", generated.3);
+
+        let log = vec![
+            Ping::new(0, 40.0),
+            Ping::new(0, 20.0),
+            Ping::new(0, 30.0),
+            Ping::new(0, 1000.0),
+        ];
+
+        let generated = generate_stats(&log);
+        assert_eq!(20.0, generated.0);
+        assert_eq!(40.0, generated.1);
+        assert_eq!(30.0, generated.2);
+        assert_eq!("1 / 4", generated.3);
+    }
+
+    #[test]
+    fn test_generate_history() {}
 }
