@@ -25,11 +25,17 @@ function update_table(id, data, css_class = null) {
 }
 
 function update_stats(stats) {
-    if (stats instanceof Array && stats.length >= 5) {
-        document.getElementById("stats-min").textContent = stats[1]
-        document.getElementById("stats-max").textContent = stats[2]
-        document.getElementById("stats-avg").textContent = stats[3]
-        document.getElementById("stats-lost").textContent = stats[4]
+    if (stats.hasOwnProperty("min")) {
+        document.getElementById("stats-min").textContent = stats["min"]
+    }
+    if (stats.hasOwnProperty("max")) {
+        document.getElementById("stats-max").textContent = stats["max"]
+    }
+    if (stats.hasOwnProperty("avg")) {
+        document.getElementById("stats-avg").textContent = stats["avg"]
+    }
+    if (stats.hasOwnProperty("lost")) {
+        document.getElementById("stats-lost").textContent = stats["lost"]
     }
 }
 

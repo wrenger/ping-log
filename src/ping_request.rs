@@ -1,6 +1,4 @@
-extern crate chrono;
-
-use self::chrono::prelude::*;
+use chrono::{Local};
 
 use super::ping::Ping;
 

@@ -1,12 +1,9 @@
-extern crate chrono;
-extern crate serde_json;
+use chrono::{Duration, Timelike};
 
-use self::chrono::{Duration, Timelike};
-use self::serde_json::*;
-
-use super::ping::Ping;
+use super::ping::{History, Ping};
 
 use std::f64::NAN;
+
 use std::fs::{read_dir, write, File};
 use std::io::{BufRead, BufReader, Result};
 use std::path::Path;
@@ -37,7 +34,7 @@ pub fn log_files<P: AsRef<Path>>(dir: P) -> Vec<String> {
 
 fn generate_json(log: &Vec<Ping>, files: &[String]) -> String {
     let data = json!({
-        "log":  generate_log(&log),
+        "log": &log[..60],
         "history": generate_history(&log),
         "files": files
     });
@@ -72,15 +69,8 @@ fn read_log_file(file: &str) -> Result<Vec<Ping>> {
     Ok(log)
 }
 
-fn generate_log(log: &Vec<Ping>) -> Vec<(String, f64)> {
-    log.into_iter()
-        .take(60)
-        .map(Ping::tuple)
-        .collect::<Vec<_>>()
-}
-
-fn generate_history(log: &[Ping]) -> Vec<(String, f64, f64, f64, String)> {
-    let mut chunks: Vec<(String, f64, f64, f64, String)> = vec![];
+fn generate_history(log: &[Ping]) -> Vec<History> {
+    let mut chunks: Vec<History> = vec![];
     if log.len() > 0 {
         let mut start = 0;
         let mut end = 0;
@@ -91,57 +81,21 @@ fn generate_history(log: &[Ping]) -> Vec<(String, f64, f64, f64, String)> {
         let mut until_ts = until.timestamp();
 
         for l in log {
-            if l.time < until_ts {
-                let time_range = until.format("%d.%m.%y %H").to_string()
-                    + (until + chrono::Duration::hours(1))
-                        .format(" - %Hh")
-                        .to_string()
-                        .as_str();
-                let stats = generate_stats(&log[start..end]);
-                chunks.push((time_range, stats.0, stats.1, stats.2, stats.3));
+            while l.time < until_ts {
+                chunks.push(History::from((&log[start..end], until.timestamp())));
 
                 start = end;
-                until = until - chrono::Duration::hours(1);
+                until = until - Duration::hours(1);
                 until_ts = until.timestamp();
-            } else {
-                end += 1;
             }
+            end += 1;
+        }
+        if end > start {
+            chunks.push(History::from((&log[start..end], until.timestamp())));
         }
     }
 
     chunks
-}
-
-fn generate_stats(log: &[Ping]) -> (f64, f64, f64, String) {
-    let mut min = 1000.0;
-    let mut max = 0.0;
-    let mut sum = 0.0;
-    let mut lost: i32 = 0;
-
-    for entry in log {
-        if entry.latency < min {
-            min = entry.latency;
-        }
-        if entry.latency >= 1000.0 {
-            lost += 1;
-        } else {
-            if entry.latency > max {
-                max = entry.latency;
-            }
-            sum += entry.latency;
-        }
-    }
-
-    let avg = ((sum * 100.0) / (log.len() - lost as usize) as f64).round() as f64 / 100.0;
-
-    if min >= 1000.0 {
-        min = NAN;
-    }
-    if max <= 0.0 {
-        max = NAN;
-    }
-
-    (min, max, avg, format!("{} / {}", lost, log.len()))
 }
 
 #[cfg(test)]
@@ -149,53 +103,23 @@ mod test {
     use super::*;
 
     #[test]
-    fn test_generate_log() {
-        let log = vec![Ping::new(1535839466, 20.0)];
-        let generated = generate_log(&log);
-        assert_eq!("02.09.18 00:04", generated[0].0);
-        assert_eq!(log[0].latency, generated[0].1);
+    fn test_generate_history() {
+        let log = [Ping::new(1536062893, 10.0), Ping::new(1536059293, 20.0)];
 
-        assert_eq!(1, generated.len());
+        let history = generate_history(&log);
 
-        let log = vec![Ping::new(1535839466, 23.05); 62];
-        let generated = generate_log(&log);
+        assert_eq!(2, history.len());
+        assert_eq!(History::new(1536062400, 10.0, 10.0, 10.0, 0, 1), history[0]);
+        assert_eq!(History::new(1536058800, 20.0, 20.0, 20.0, 0, 1), history[1]);
 
-        assert_eq!("02.09.18 00:04", generated[0].0);
-        assert_eq!(log[0].latency, generated[0].1);
+        let log = [Ping::new(1536062893, 10.0), Ping::new(1536055693, 20.0)];
 
-        assert_eq!(60, generated.len());
+        let history = generate_history(&log);
+        println!("{:?}", history);
+
+        assert_eq!(3, history.len());
+        assert_eq!(History::new(1536062400, 10.0, 10.0, 10.0, 0, 1), history[0]);
+        assert_eq!(History::new(1536058800, NAN, NAN, NAN, 0, 0), history[1]);
+        assert_eq!(History::new(1536055200, 20.0, 20.0, 20.0, 0, 1), history[2]);
     }
-
-    #[test]
-    fn test_generate_stats() {
-        let generated = generate_stats(&vec![]);
-        assert!(generated.0.is_nan());
-        assert!(generated.1.is_nan());
-        assert!(generated.2.is_nan());
-        assert_eq!("0 / 0", generated.3);
-
-        let log = vec![Ping::new(0, 20.0)];
-
-        let generated = generate_stats(&log);
-        assert_eq!(20.0, generated.0);
-        assert_eq!(20.0, generated.1);
-        assert_eq!(20.0, generated.2);
-        assert_eq!("0 / 1", generated.3);
-
-        let log = vec![
-            Ping::new(0, 40.0),
-            Ping::new(0, 20.0),
-            Ping::new(0, 30.0),
-            Ping::new(0, 1000.0),
-        ];
-
-        let generated = generate_stats(&log);
-        assert_eq!(20.0, generated.0);
-        assert_eq!(40.0, generated.1);
-        assert_eq!(30.0, generated.2);
-        assert_eq!("1 / 4", generated.3);
-    }
-
-    #[test]
-    fn test_generate_history() {}
 }

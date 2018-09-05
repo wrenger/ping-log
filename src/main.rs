@@ -1,5 +1,12 @@
 extern crate chrono;
 extern crate argparse;
+extern crate serde;
+
+#[macro_use]
+extern crate serde_json;
+
+#[macro_use]
+extern crate serde_derive;
 
 mod ping;
 mod ping_web;
