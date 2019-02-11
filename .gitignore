@@ -1,6 +1,8 @@
+.vscode/
 # temp
 /log/
 /www/data.json
 # Rust
+Cargo.lock
 /target/
 **/*.rs.bk

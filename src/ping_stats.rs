@@ -34,7 +34,7 @@ pub fn log_files<P: AsRef<Path>>(dir: P) -> Vec<String> {
 
 fn generate_json(log: &Vec<Ping>, files: &[String]) -> String {
     let data = json!({
-        "log": &log[..60],
+        "log": &log[..60.min(log.len())],
         "history": generate_history(&log),
         "files": files
     });
@@ -70,6 +70,8 @@ fn read_log_file(file: &str) -> Result<Vec<Ping>> {
 }
 
 fn generate_history(log: &[Ping]) -> Vec<History> {
+    let max_count = 3 * 24;
+
     let mut chunks: Vec<History> = vec![];
     if log.len() > 0 {
         let mut start = 0;
@@ -81,12 +83,17 @@ fn generate_history(log: &[Ping]) -> Vec<History> {
         let mut until_ts = until.timestamp();
 
         for l in log {
-            while l.time < until_ts {
+            let mut i = 0;
+            while l.time < until_ts && i < max_count {
                 chunks.push(History::from((&log[start..end], until.timestamp())));
 
                 start = end;
                 until = until - Duration::hours(1);
                 until_ts = until.timestamp();
+                i += 1;
+            }
+            if i >= max_count {
+                break;
             }
             end += 1;
         }
