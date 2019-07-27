@@ -1,0 +1,52 @@
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ping Log</title>
+    <link rel="stylesheet" href="static/css/theme.css">
+    <link rel="stylesheet" href="static/css/style.css">
+</head>
+
+<body>
+    <div class="log-display">
+        <div class="title">
+            <h1>Ping Log</h1>
+        </div>
+        <div class="stats spin" id="stats">
+            <div>
+                <span id="stats-min" class="stats-min">0.0</span>
+                <span id="stats-avg" class="stats-avg">0.0</span>
+                <span id="stats-max" class="stats-max">0.0</span>
+            </div>
+            <div id="stats-lost" class="stats-lost"></div>
+        </div>
+        <div class="box">
+            <h2>Recent</h2>
+            <div>
+                <canvas class="chart" id="recent-log"></canvas>
+            </div>
+        </div>
+        <div class="box">
+            <h2>Daily</h2>
+            <select name="select-day" id="select-day">
+                <option value="0">Today</option>
+                <option value="1">-1 Day</option>
+                <option value="2">-2 Days</option>
+                <option value="3">-3 Days</option>
+                <option value="4">-4 Days</option>
+                <option value="5">-5 Days</option>
+            </select>
+            <div>
+                <canvas class="chart" id="daily-log"></canvas>
+            </div>
+        </div>
+    </div>
+    <div class="reload" id="reload">↺</div>
+
+    <script src="static/js/moment.js"></script>
+    <script src="static/js/Chart.min.js"></script>
+    <script src="static/js/ping-web.js"></script>
+</body>
+
+</html>

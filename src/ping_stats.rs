@@ -2,29 +2,16 @@ use chrono::{Duration, Timelike};
 
 use super::ping::{History, Ping};
 
-use std::f64::NAN;
+use std::convert::TryFrom;
+use std::fs::{read_dir, File};
+use std::io::{BufRead, BufReader};
 
-use std::fs::{read_dir, write, File};
-use std::io::{BufRead, BufReader, Result};
-use std::path::Path;
-
-pub fn generate_statistics(log_dir: &String, web_dir: &String) {
-    let files = log_files(log_dir);
-    let log = read_log(&files).unwrap_or(vec![]);
-
-    let data = generate_json(&log, &files);
-    match write(web_dir.clone() + "/data.json", data) {
-        Err(e) => {
-            eprintln!("write data error: {}", e);
-        }
-        _ => println!("update data."),
-    };
-}
+use std::path::{Path, PathBuf};
 
 pub fn log_files<P: AsRef<Path>>(dir: P) -> Vec<String> {
     let mut files = read_dir(dir)
         .map(|f| {
-            f.filter_map(|s| s.ok().map(|s| s.path().to_string_lossy().into_owned()))
+            f.filter_map(|s| s.ok().map(|s| s.file_name().to_string_lossy().into_owned()))
                 .collect::<Vec<_>>()
         })
         .unwrap_or(vec![]);
@@ -32,41 +19,54 @@ pub fn log_files<P: AsRef<Path>>(dir: P) -> Vec<String> {
     files
 }
 
-fn generate_json(log: &Vec<Ping>, files: &[String]) -> String {
-    let data = json!({
-        "log": &log[..60.min(log.len())],
-        "history": generate_history(&log),
-        "files": files
-    });
-    data.to_string()
+pub fn read_log<P: AsRef<Path>>(
+    log_dir: P,
+    offset: usize,
+    count: usize,
+    start: i64,
+    end: i64,
+) -> Vec<Ping> {
+    read_log_all(log_dir.as_ref())
+        .skip_while(move |ping| start != 0 && ping.time > start)
+        .skip(offset)
+        .take(count)
+        .take_while(move |ping| end == 0 || ping.time >= end)
+        .collect::<Vec<_>>()
 }
 
-fn read_log(files: &[String]) -> Result<Vec<Ping>> {
-    let mut log = Vec::with_capacity(3 * 60 * 24);
-    let max = 1 + 3.min(files.len());
-    for i in 1..max {
-        let mut daily_log = read_log_file(&files[files.len() - i])?;
-        log.append(&mut daily_log);
-    }
-    Ok(log)
+fn read_log_all(log_dir: &Path) -> impl Iterator<Item = Ping> {
+    let log_dir_buf = log_dir.to_owned();
+    log_files(log_dir)
+        .into_iter()
+        .rev()
+        .map(move |file| read_log_file(log_dir_buf.to_owned(), file).into_iter())
+        .flatten()
 }
 
-fn read_log_file(file: &str) -> Result<Vec<Ping>> {
-    let mut log = Vec::with_capacity(60 * 24);
-    let file = File::open(&file)?;
-    for line in BufReader::new(file).lines() {
-        let line = line?;
-        let values = line.splitn(2, ' ').collect::<Vec<_>>();
-        if values.len() == 2 {
-            if let Ok(time) = values[0].parse::<i64>() {
-                if let Ok(ping) = values[1].parse::<f64>() {
-                    log.push(Ping::new(time, ping));
-                }
-            }
-        }
+fn read_log_file<P: AsRef<Path>, F: AsRef<Path>>(log_dir: P, file: F) -> Vec<Ping> {
+    println!("read {:?}/{:?}", log_dir.as_ref(), file.as_ref());
+    if let Ok(file) = File::open(log_dir.as_ref().join(file).as_os_str()) {
+        let mut pings = BufReader::new(file)
+            .lines()
+            .filter_map(|line| line.ok().and_then(|line| Ping::try_from(line).ok()))
+            .collect::<Vec<_>>();
+        pings.reverse();
+        pings
+    } else {
+        println!("Error opening file\n");
+        vec![]
     }
-    log.reverse();
-    Ok(log)
+}
+
+pub fn read_history<P: AsRef<Path>>(
+    log_dir: P,
+    offset: usize,
+    count: usize,
+    start: i64,
+    end: i64,
+) -> Vec<History> {
+    let pings = read_log(log_dir, offset, count * 60, start, end);
+    generate_history(&pings[..])
 }
 
 fn generate_history(log: &[Ping]) -> Vec<History> {
@@ -108,6 +108,8 @@ fn generate_history(log: &[Ping]) -> Vec<History> {
 #[cfg(test)]
 mod test {
     use super::*;
+
+    use std::f64::NAN;
 
     #[test]
     fn test_generate_history() {

@@ -1,0 +1,95 @@
+body {
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+}
+
+div.reload {
+    position: fixed;
+    right: 15px;
+    top: 15px;
+    font-size: 30px;
+    line-height: 30px;
+    background: var(--theme-lighter);
+    text-align: center;
+    padding: 10px;
+    border-radius: 30px;
+    width: 50px;
+    height: 50px;
+    cursor: pointer;
+}
+
+div.title {
+    font-size: 28px;
+    padding: 10px;
+}
+
+div.title>h1 {
+    text-align: center;
+    padding: 0px 0 15px 0;
+    margin: 0;
+    border-bottom: var(--text-light) 1px solid;
+}
+
+div.stats {
+    margin: 50px auto;
+    background-color: var(--theme-lighter);
+    border-radius: 4px;
+    text-align: center;
+    padding: 15px 0;
+    max-width: 375px;
+}
+
+span.stats-min,
+span.stats-max,
+span.stats-avg,
+div.stats-lost {
+    -webkit-user-select: text;
+    -moz-user-select: text;
+    -ms-user-select: text;
+    user-select: text;
+    font-size: 20px;
+}
+
+span.stats-avg {
+    font-size: 26px;
+    padding: 0 20px;
+}
+
+span.stats-min::after,
+span.stats-max::after,
+span.stats-avg::after {
+    content: " ms";
+}
+
+div.stats-lost::before {
+    content: "(Lost: ";
+}
+
+div.stats-lost::after {
+    content: " %)";
+}
+
+span.stats-min::after,
+span.stats-max::after,
+span.stats-avg::after,
+div.stats-lost::before,
+div.stats-lost::after {
+    color: var(--bg-gray);
+    font-size: 0.8em;
+}
+
+div.box {
+    text-align: center;
+    padding: 20px;
+    background-color: var(--theme-lighter);
+    border-radius: 4px;
+    max-width: 1000px;
+    margin: 20px auto;
+}
+
+canvas.chart {
+    width: 100%;
+    height: 250px;
+}
