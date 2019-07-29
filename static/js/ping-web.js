@@ -124,7 +124,7 @@
             document.getElementById("stats-min").textContent = stats["min"];
             document.getElementById("stats-max").textContent = stats["max"];
             document.getElementById("stats-avg").textContent = stats["avg"];
-            document.getElementById("stats-lost").textContent = stats["lost"];
+            document.getElementById("stats-lost").textContent = stats["lost"] * 100;
         }
     }
 
@@ -236,6 +236,14 @@
 
     function init() {
         RELOAD_BTN.addEventListener("click", update);
+
+        for (var i = 0; i <= 7; ++i) {
+            var option = document.createElement("option");
+            option.text = moment().subtract(i, "day").format("dd DD.MM.YYYY");
+            option.value = i;
+            DAY_SELECT.options.add(option)
+        }
+
         DAY_SELECT.addEventListener("change", update);
 
         update();

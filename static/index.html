@@ -29,14 +29,7 @@
         </div>
         <div class="box">
             <h2>Daily</h2>
-            <select name="select-day" id="select-day">
-                <option value="0">Today</option>
-                <option value="1">-1 Day</option>
-                <option value="2">-2 Days</option>
-                <option value="3">-3 Days</option>
-                <option value="4">-4 Days</option>
-                <option value="5">-5 Days</option>
-            </select>
+            <select name="select-day" id="select-day"></select>
             <div>
                 <canvas class="chart" id="daily-log"></canvas>
             </div>
@@ -44,7 +37,7 @@
     </div>
     <div class="reload" id="reload">↺</div>
 
-    <script src="static/js/moment.js"></script>
+    <script src="static/js/moment.min.js"></script>
     <script src="static/js/Chart.min.js"></script>
     <script src="static/js/ping-web.js"></script>
 </body>
