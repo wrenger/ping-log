@@ -6,7 +6,7 @@ use std::convert::TryFrom;
 use std::fs::{read_dir, File};
 use std::io::{BufRead, BufReader};
 
-use std::path::{Path, PathBuf};
+use std::path::Path;
 
 pub fn log_files<P: AsRef<Path>>(dir: P) -> Vec<String> {
     let mut files = read_dir(dir)
@@ -44,7 +44,6 @@ fn read_log_all(log_dir: &Path) -> impl Iterator<Item = Ping> {
 }
 
 fn read_log_file<P: AsRef<Path>, F: AsRef<Path>>(log_dir: P, file: F) -> Vec<Ping> {
-    println!("read {:?}/{:?}", log_dir.as_ref(), file.as_ref());
     if let Ok(file) = File::open(log_dir.as_ref().join(file).as_os_str()) {
         let mut pings = BufReader::new(file)
             .lines()

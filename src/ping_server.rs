@@ -1,93 +1,83 @@
+extern crate actix_files;
+extern crate actix_web;
+
 use std::net::SocketAddr;
 use std::path::{Path, PathBuf};
 
-use rocket::config::{Config, Environment};
-use rocket::response::NamedFile;
-use rocket::State;
-use rocket_contrib::json::Json;
+use serde::Deserialize;
+use self::actix_files::{Files, NamedFile};
+use self::actix_web::{web, App, HttpResponse, HttpServer};
 
-use super::ping::{History, Ping};
 use super::ping_stats;
 
-#[get("/")]
+struct State {
+    log_dir: String,
+}
+
+#[derive(Deserialize)]
+struct TimeQuery {
+    offset: Option<usize>,
+    count: Option<usize>,
+    start: Option<i64>,
+    end: Option<i64>,
+}
+
+// "/"
 fn index() -> Option<NamedFile> {
     static_resource(PathBuf::from("index.html"))
 }
 
-#[get("/static/<path..>")]
+// "/static/<path..>"
 fn static_resource(path: PathBuf) -> Option<NamedFile> {
     NamedFile::open(Path::new("static/").join(path)).ok()
 }
 
-#[get("/api/pings?<offset>&<count>&<start>&<end>")]
-fn api_pings(
-    offset: Option<usize>,
-    count: Option<usize>,
-    start: Option<i64>,
-    end: Option<i64>,
-    log_dir: State<String>,
-) -> Json<Vec<Ping>> {
-    Json(ping_stats::read_log(
-        log_dir.as_str(),
-        offset.unwrap_or(0),
-        count.unwrap_or(60),
-        start.unwrap_or(0),
-        end.unwrap_or(0),
+// "/api/pings?<offset>&<count>&<start>&<end>"
+fn api_pings(query: web::Query<TimeQuery>, state: web::Data<State>) -> HttpResponse {
+    HttpResponse::Ok().json(ping_stats::read_log(
+        &state.log_dir,
+        query.offset.unwrap_or(0),
+        query.count.unwrap_or(60),
+        query.start.unwrap_or(0),
+        query.end.unwrap_or(0),
     ))
 }
 
-#[get("/api/history?<offset>&<count>&<start>&<end>")]
-fn api_history(
-    offset: Option<usize>,
-    count: Option<usize>,
-    start: Option<i64>,
-    end: Option<i64>,
-    log_dir: State<String>,
-) -> Json<Vec<History>> {
-    Json(ping_stats::read_history(
-        log_dir.as_str(),
-        offset.unwrap_or(0),
-        count.unwrap_or(24),
-        start.unwrap_or(0),
-        end.unwrap_or(0),
+// "/api/history?<offset>&<count>&<start>&<end>"
+fn api_history(query: web::Query<TimeQuery>, state: web::Data<State>) -> HttpResponse {
+    HttpResponse::Ok().json(ping_stats::read_history(
+        &state.log_dir,
+        query.offset.unwrap_or(0),
+        query.count.unwrap_or(24),
+        query.start.unwrap_or(0),
+        query.end.unwrap_or(0),
     ))
 }
 
-
-#[get("/api/files")]
-fn api_files(log_dir: State<String>) -> Json<Vec<String>> {
-    Json(ping_stats::log_files(log_dir.as_str()))
+// "/api/files"
+fn api_files(state: web::Data<State>) -> HttpResponse {
+    HttpResponse::Ok().json(ping_stats::log_files(&state.log_dir))
 }
-
-#[get("/api/file/<file..>")]
-fn api_file(file: PathBuf, log_dir: State<String>) -> Option<NamedFile> {
-    NamedFile::open(Path::new(log_dir.as_str()).join(file)).ok()
-}
-
 
 pub fn run_webserver(ip: SocketAddr, log_dir: &String) {
     println!("Server is running on {}", ip);
 
-    let config = Config::build(Environment::Development)
-        .address(ip.ip().to_string())
-        .port(ip.port())
-        .expect("Rocket Config Error");
-
     let log_dir = log_dir.clone();
 
-    rocket::custom(config)
-        .mount(
-            "/",
-            routes![
-                index,
-                static_resource,
-                api_pings,
-                api_history,
-                api_files,
-                api_file,
-            ],
-        )
-        .manage(log_dir)
-        .launch();
+    HttpServer::new(move || {
+        App::new()
+            .data(State {
+                log_dir: log_dir.clone(),
+            })
+            .route("/", web::get().to(index))
+            .route("/api/pings", web::get().to(api_pings))
+            .route("/api/history", web::get().to(api_history))
+            .route("/api/files", web::get().to(api_files))
+            .service(Files::new("/api/file", log_dir.clone()))
+            .service(Files::new("/static", "./static"))
+    })
+    .bind(ip)
+    .expect("Could not configure server: {}")
+    .run()
+    .unwrap()
 }
-

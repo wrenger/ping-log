@@ -1,6 +1,7 @@
 use std::convert::TryFrom;
 use std::f64::NAN;
 
+use serde::Serialize;
 use chrono::{DateTime, Local, NaiveDateTime, Utc};
 
 #[derive(Debug, Clone, Serialize)]

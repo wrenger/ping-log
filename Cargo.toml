@@ -1,17 +1,11 @@
 [package]
 name = "rust-ping-log"
-version = "0.1.0"
+version = "0.2.0"
 authors = ["Lars Wrenger <lars@wrenger.net>"]
 
 [dependencies]
-rocket = "0.4.2"
+actix-web = "1.0"
+actix-files = "0.1.4"
 argparse = "0.2.2"
 chrono = "0.4.7"
-serde = "1.0.76"
-serde_json = "1.0.26"
-serde_derive = "1.0.76"
-
-[dependencies.rocket_contrib]
-version = "0.4.2"
-default-features = false
-features = ["json"]
+serde = "1.0.98"
