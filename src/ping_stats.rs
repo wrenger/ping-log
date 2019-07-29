@@ -1,5 +1,3 @@
-use chrono::{Duration, Timelike};
-
 use super::ping::{History, Ping};
 
 use std::convert::TryFrom;
@@ -9,12 +7,12 @@ use std::io::{BufRead, BufReader};
 use std::path::Path;
 
 pub fn log_files<P: AsRef<Path>>(dir: P) -> Vec<String> {
-    let mut files = read_dir(dir)
+    let mut files: Vec<_> = read_dir(dir)
         .map(|f| {
-            f.filter_map(|s| s.ok().map(|s| s.file_name().to_string_lossy().into_owned()))
-                .collect::<Vec<_>>()
+            f.filter_map(|s| s.map(|s| s.file_name().to_string_lossy().into_owned()).ok())
+                .collect()
         })
-        .unwrap_or(vec![]);
+        .unwrap_or_default();
     files.sort();
     files
 }
@@ -75,20 +73,15 @@ fn generate_history(log: &[Ping]) -> Vec<History> {
     if log.len() > 0 {
         let mut start = 0;
         let mut end = 0;
-        let mut until = log[0].date_time();
-        until = until - Duration::minutes(until.minute().into());
-        until = until - Duration::seconds(until.second().into());
-        until = until - Duration::nanoseconds(until.nanosecond().into());
-        let mut until_ts = until.timestamp();
+        let mut until = log[0].time / 3600 * 3600;
 
         for l in log {
             let mut i = 0;
-            while l.time < until_ts && i < max_count {
-                chunks.push(History::from((&log[start..end], until.timestamp())));
+            while l.time < until && i < max_count {
+                chunks.push(History::from((&log[start..end], until)));
 
                 start = end;
-                until = until - Duration::hours(1);
-                until_ts = until.timestamp();
+                until -= 3600;
                 i += 1;
             }
             if i >= max_count {
@@ -97,7 +90,7 @@ fn generate_history(log: &[Ping]) -> Vec<History> {
             end += 1;
         }
         if end > start {
-            chunks.push(History::from((&log[start..end], until.timestamp())));
+            chunks.push(History::from((&log[start..end], until)));
         }
     }
 
@@ -117,8 +110,8 @@ mod test {
         let history = generate_history(&log);
 
         assert_eq!(2, history.len());
-        assert_eq!(History::new(1536062400, 10.0, 10.0, 10.0, 0, 1), history[0]);
-        assert_eq!(History::new(1536058800, 20.0, 20.0, 20.0, 0, 1), history[1]);
+        assert_eq!(History::new(1536062400, 10.0, 10.0, 10.0, 0.0, 1), history[0]);
+        assert_eq!(History::new(1536058800, 20.0, 20.0, 20.0, 0.0, 1), history[1]);
 
         let log = [Ping::new(1536062893, 10.0), Ping::new(1536055693, 20.0)];
 
@@ -126,8 +119,8 @@ mod test {
         println!("{:?}", history);
 
         assert_eq!(3, history.len());
-        assert_eq!(History::new(1536062400, 10.0, 10.0, 10.0, 0, 1), history[0]);
-        assert_eq!(History::new(1536058800, NAN, NAN, NAN, 0, 0), history[1]);
-        assert_eq!(History::new(1536055200, 20.0, 20.0, 20.0, 0, 1), history[2]);
+        assert_eq!(History::new(1536062400, 10.0, 10.0, 10.0, 0.0, 1), history[0]);
+        assert_eq!(History::new(1536058800, NAN, NAN, NAN, NAN, 0), history[1]);
+        assert_eq!(History::new(1536055200, 20.0, 20.0, 20.0, 0.0, 1), history[2]);
     }
 }

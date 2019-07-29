@@ -2,7 +2,6 @@ use std::convert::TryFrom;
 use std::f64::NAN;
 
 use serde::Serialize;
-use chrono::{DateTime, Local, NaiveDateTime, Utc};
 
 #[derive(Debug, Clone, Serialize)]
 pub struct Ping {
@@ -13,13 +12,6 @@ pub struct Ping {
 impl Ping {
     pub fn new(time: i64, ping: f64) -> Ping {
         Ping { time, ping }
-    }
-
-    pub fn date_time(&self) -> DateTime<Local> {
-        let native = NaiveDateTime::from_timestamp(self.time, 0);
-        let time: DateTime<Utc> = DateTime::from_utc(native, Utc);
-
-        time.with_timezone(&Local)
     }
 }
 
@@ -45,12 +37,12 @@ pub struct History {
     pub min: f64,
     pub max: f64,
     pub avg: f64,
-    pub lost: u32,
+    pub lost: f64,
     pub count: u32,
 }
 
 impl History {
-    pub fn new(time: i64, min: f64, max: f64, avg: f64, lost: u32, count: u32) -> History {
+    pub fn new(time: i64, min: f64, max: f64, avg: f64, lost: f64, count: u32) -> History {
         History {
             time: time,
             min: min,
@@ -67,14 +59,14 @@ impl<'a> From<(&'a [Ping], i64)> for History {
         let mut min = 1000.0;
         let mut max = 0.0;
         let mut sum = 0.0;
-        let mut lost: u32 = 0;
+        let mut lost = 0.0;
 
         for entry in log.0 {
             if entry.ping < min {
                 min = entry.ping;
             }
             if entry.ping >= 1000.0 {
-                lost += 1;
+                lost += 1.0;
             } else {
                 if entry.ping > max {
                     max = entry.ping;
@@ -83,7 +75,8 @@ impl<'a> From<(&'a [Ping], i64)> for History {
             }
         }
 
-        let avg = ((sum * 100.0) / (log.0.len() - lost as usize) as f64).round() as f64 / 100.0;
+        let avg = (1000.0 * sum / (log.0.len() as f64 - lost)).round() / 1000.0;
+        let lost = (1000.0 * lost / log.0.len() as f64).round() / 1000.0;
 
         if min >= 1000.0 {
             min = NAN;
@@ -102,7 +95,7 @@ impl PartialEq for History {
             && (self.min == other.min || (self.min.is_nan() && other.min.is_nan()))
             && (self.max == other.max || (self.max.is_nan() && other.max.is_nan()))
             && (self.avg == other.avg || (self.avg.is_nan() && other.avg.is_nan()))
-            && self.lost == other.lost
+            && (self.lost == other.lost || (self.lost.is_nan() && other.lost.is_nan()))
             && self.count == other.count
     }
 }
@@ -115,11 +108,11 @@ mod test {
     fn test_history_from() {
         let log = vec![];
         let generated = History::from((&log[..], 0_i64));
-        assert_eq!(History::new(0, NAN, NAN, NAN, 0, 0), generated);
+        assert_eq!(History::new(0, NAN, NAN, NAN, NAN, 0), generated);
 
         let log = vec![Ping::new(0, 20.0)];
         let generated = History::from((&log[..], 0_i64));
-        assert_eq!(History::new(0, 20.0, 20.0, 20.0, 0, 1), generated);
+        assert_eq!(History::new(0, 20.0, 20.0, 20.0, 0.0, 1), generated);
 
         let log = vec![
             Ping::new(0, 40.0),
@@ -128,6 +121,6 @@ mod test {
             Ping::new(0, 1000.0),
         ];
         let generated = History::from((&log[..], 0_i64));
-        assert_eq!(History::new(0, 20.0, 40.0, 30.0, 1, 4), generated);
+        assert_eq!(History::new(0, 20.0, 40.0, 30.0, 0.25, 4), generated);
     }
 }

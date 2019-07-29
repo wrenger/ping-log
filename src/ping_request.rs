@@ -1,22 +1,17 @@
+use std::fs::OpenOptions;
+use std::io::{Result, Write};
+use std::path::Path;
+use std::process::Command;
+
 use chrono::Local;
 
 use super::ping::Ping;
 
-use std::fs::OpenOptions;
-use std::io::{Result, Write};
-use std::path::Path;
-
-use std::process::Command;
-
 pub fn ping_request(host: &String, log_dir: &String) {
     let log = perform_request(host);
+    let file_name = Local::now().format("%y%m%d.txt").to_string();
 
-    let file_name = Local::now().format("/%y%m%d.txt").to_string();
-
-    match write_request(log_dir.clone() + file_name.as_str(), log) {
-        Err(e) => eprintln!("write log error: {}", e),
-        _ => println!("update log."),
-    }
+    write_request(Path::new(&log_dir).join(file_name), log).expect("write log error: {}");
 }
 
 fn perform_request(host: &String) -> Ping {
@@ -33,19 +28,20 @@ fn perform_request(host: &String) -> Ping {
         );
     }
 
-    let ping = parse_output(String::from_utf8(output.stdout).unwrap_or_default());
-    Ping::new(time, ping)
+    Ping::new(
+        time,
+        String::from_utf8(output.stdout)
+            .ok()
+            .map_or(1000.0, |out| parse_output(out)),
+    )
 }
 
 fn parse_output(output: String) -> f64 {
-    let lines = output.splitn(3, '\n').collect::<Vec<_>>();
-    if lines.len() >= 3 {
-        let line = lines[1];
-        let start = line.rfind('=');
-        let end = line.rfind(' ');
-        if start.is_some() && end.is_some() {
-            let ping_str = &line[start.unwrap() + 1..end.unwrap()];
-            return ping_str.parse().unwrap_or(1000.0);
+    if let Some(line) = output.splitn(3, '\n').nth(1) {
+        if let Some(start) = line.rfind('=') {
+            if let Some(end) = line.rfind(' ') {
+                return line[start + 1..end].parse().unwrap_or(1000.0);
+            }
         }
     }
     1000.0
