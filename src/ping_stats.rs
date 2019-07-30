@@ -67,31 +67,22 @@ pub fn read_history<P: AsRef<Path>>(
 }
 
 fn generate_history(log: &[Ping]) -> Vec<History> {
-    let max_count = 3 * 24;
-
     let mut chunks: Vec<History> = vec![];
-    if log.len() > 0 {
-        let mut start = 0;
-        let mut end = 0;
-        let mut until = log[0].time / 3600 * 3600;
+    let mut start = 0;
+    let mut end = 0;
+    let mut until = log[0].time / 3600 * 3600;
 
-        for l in log {
-            let mut i = 0;
-            while l.time < until && i < max_count {
-                chunks.push(History::from((&log[start..end], until)));
+    for l in log {
+        while l.time < until {
+            chunks.push(History::from(until, &log[start..end]));
 
-                start = end;
-                until -= 3600;
-                i += 1;
-            }
-            if i >= max_count {
-                break;
-            }
-            end += 1;
+            start = end;
+            until -= 3600;
         }
-        if end > start {
-            chunks.push(History::from((&log[start..end], until)));
-        }
+        end += 1;
+    }
+    if end > start {
+        chunks.push(History::from(until, &log[start..end]));
     }
 
     chunks

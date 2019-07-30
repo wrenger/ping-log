@@ -52,16 +52,14 @@ impl History {
             count: count,
         }
     }
-}
 
-impl<'a> From<(&'a [Ping], i64)> for History {
-    fn from(log: (&'a [Ping], i64)) -> History {
+    pub fn from<'a>(time: i64, pings: &'a [Ping]) -> History {
         let mut min = 1000.0;
         let mut max = 0.0;
         let mut sum = 0.0;
         let mut lost = 0.0;
 
-        for entry in log.0 {
+        for entry in pings {
             if entry.ping < min {
                 min = entry.ping;
             }
@@ -75,8 +73,8 @@ impl<'a> From<(&'a [Ping], i64)> for History {
             }
         }
 
-        let avg = (1000.0 * sum / (log.0.len() as f64 - lost)).round() / 1000.0;
-        let lost = (1000.0 * lost / log.0.len() as f64).round() / 1000.0;
+        let avg = (1000.0 * sum / (pings.len() as f64 - lost)).round() / 1000.0;
+        let lost = (1000.0 * lost / pings.len() as f64).round() / 1000.0;
 
         if min >= 1000.0 {
             min = NAN;
@@ -85,7 +83,7 @@ impl<'a> From<(&'a [Ping], i64)> for History {
             max = NAN;
         }
 
-        History::new(log.1, min, max, avg, lost, log.0.len() as u32)
+        History::new(time, min, max, avg, lost, pings.len() as u32)
     }
 }
 
@@ -107,11 +105,11 @@ mod test {
     #[test]
     fn test_history_from() {
         let log = vec![];
-        let generated = History::from((&log[..], 0_i64));
+        let generated = History::from(0_i64, &log[..]);
         assert_eq!(History::new(0, NAN, NAN, NAN, NAN, 0), generated);
 
         let log = vec![Ping::new(0, 20.0)];
-        let generated = History::from((&log[..], 0_i64));
+        let generated = History::from(0_i64, &log[..]);
         assert_eq!(History::new(0, 20.0, 20.0, 20.0, 0.0, 1), generated);
 
         let log = vec![
@@ -120,7 +118,7 @@ mod test {
             Ping::new(0, 30.0),
             Ping::new(0, 1000.0),
         ];
-        let generated = History::from((&log[..], 0_i64));
+        let generated = History::from(0_i64, &log[..]);
         assert_eq!(History::new(0, 20.0, 40.0, 30.0, 0.25, 4), generated);
     }
 }
