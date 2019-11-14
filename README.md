@@ -18,7 +18,9 @@ First [Rust](https://www.rust-lang.org/learn/get-started) has to be installed.
 cargo run
 ```
 
-> The server defaults to http://127.0.0.1:8081.
+> Cross-compiling is especially easy using [cross](https://github.com/rust-embedded/cross)
+>
+> E.g. for the raspberry pi: `cross build --target armv7-unknown-linux-gnueabihf`
 
 **Optional arguments:**
 ```bash
