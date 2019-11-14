@@ -25,10 +25,10 @@ pub fn read_log<P: AsRef<Path>>(
     end: i64,
 ) -> Vec<Ping> {
     read_log_all(log_dir.as_ref())
-        .skip_while(move |ping| start != 0 && ping.time > start)
+        .skip_while(|ping| start != 0 && ping.time > start)
         .skip(offset)
         .take(count)
-        .take_while(move |ping| end == 0 || ping.time >= end)
+        .take_while(|ping| end == 0 || ping.time >= end)
         .collect::<Vec<_>>()
 }
 
@@ -42,7 +42,8 @@ fn read_log_all(log_dir: &Path) -> impl Iterator<Item = Ping> {
 }
 
 fn read_log_file<P: AsRef<Path>, F: AsRef<Path>>(log_dir: P, file: F) -> Vec<Ping> {
-    if let Ok(file) = File::open(log_dir.as_ref().join(file).as_os_str()) {
+    let filename = log_dir.as_ref().join(file);
+    if let Ok(file) = File::open(&filename) {
         let mut pings = BufReader::new(file)
             .lines()
             .filter_map(|line| line.ok().and_then(|line| Ping::try_from(line).ok()))
@@ -50,7 +51,7 @@ fn read_log_file<P: AsRef<Path>, F: AsRef<Path>>(log_dir: P, file: F) -> Vec<Pin
         pings.reverse();
         pings
     } else {
-        println!("Error opening file\n");
+        eprintln!("Error opening file {:?}\n", filename);
         vec![]
     }
 }
@@ -70,7 +71,11 @@ fn generate_history(log: &[Ping]) -> Vec<History> {
     let mut chunks: Vec<History> = vec![];
     let mut start = 0;
     let mut end = 0;
-    let mut until = log[0].time / 3600 * 3600;
+    let mut until = if log.len() > 0 {
+        log[0].time / 3600 * 3600
+    } else {
+        0
+    };
 
     for l in log {
         while l.time < until {
@@ -101,8 +106,14 @@ mod test {
         let history = generate_history(&log);
 
         assert_eq!(2, history.len());
-        assert_eq!(History::new(1536062400, 10.0, 10.0, 10.0, 0.0, 1), history[0]);
-        assert_eq!(History::new(1536058800, 20.0, 20.0, 20.0, 0.0, 1), history[1]);
+        assert_eq!(
+            History::new(1536062400, 10.0, 10.0, 10.0, 0.0, 1),
+            history[0]
+        );
+        assert_eq!(
+            History::new(1536058800, 20.0, 20.0, 20.0, 0.0, 1),
+            history[1]
+        );
 
         let log = [Ping::new(1536062893, 10.0), Ping::new(1536055693, 20.0)];
 
@@ -110,8 +121,14 @@ mod test {
         println!("{:?}", history);
 
         assert_eq!(3, history.len());
-        assert_eq!(History::new(1536062400, 10.0, 10.0, 10.0, 0.0, 1), history[0]);
+        assert_eq!(
+            History::new(1536062400, 10.0, 10.0, 10.0, 0.0, 1),
+            history[0]
+        );
         assert_eq!(History::new(1536058800, NAN, NAN, NAN, NAN, 0), history[1]);
-        assert_eq!(History::new(1536055200, 20.0, 20.0, 20.0, 0.0, 1), history[2]);
+        assert_eq!(
+            History::new(1536055200, 20.0, 20.0, 20.0, 0.0, 1),
+            history[2]
+        );
     }
 }

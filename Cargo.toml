@@ -2,10 +2,12 @@
 name = "rust-ping-log"
 version = "0.2.0"
 authors = ["Lars Wrenger <lars@wrenger.net>"]
+build = "build.rs"
+edition = "2018"
 
 [dependencies]
+chrono = "0.4.9"
+serde = "1.0.102"
+structopt = "0.3.4"
 actix-web = "1.0"
-actix-files = "0.1.4"
-argparse = "0.2.2"
-chrono = "0.4.7"
-serde = "1.0.98"
+actix-files = "0.1.7"

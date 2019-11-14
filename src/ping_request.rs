@@ -1,17 +1,17 @@
 use std::fs::OpenOptions;
 use std::io::{Result, Write};
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use std::process::Command;
 
 use chrono::Local;
 
 use super::ping::Ping;
 
-pub fn ping_request(host: &String, log_dir: &String) {
+pub fn ping_request(host: &String, log_dir: &PathBuf) {
     let log = perform_request(host);
     let file_name = Local::now().format("%y%m%d.txt").to_string();
 
-    write_request(Path::new(&log_dir).join(file_name), log).expect("write log error: {}");
+    write_request(Path::new(&log_dir).join(file_name), log).expect("write log error");
 }
 
 fn perform_request(host: &String) -> Ping {
@@ -19,7 +19,7 @@ fn perform_request(host: &String) -> Ping {
     let output = Command::new("ping")
         .args(&["-c 1", "-w 1", &host])
         .output()
-        .expect("failed to execute bash 'ping' command: {}");
+        .expect("failed to execute bash 'ping' command");
 
     if !output.stderr.is_empty() {
         eprintln!(

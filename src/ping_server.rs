@@ -1,20 +1,17 @@
-extern crate actix_files;
-extern crate actix_web;
-
 use std::net::SocketAddr;
 use std::path::{Path, PathBuf};
 
+use actix_files::{Files, NamedFile};
+use actix_web::{web, App, HttpResponse, HttpServer};
 use serde::Deserialize;
-use self::actix_files::{Files, NamedFile};
-use self::actix_web::{web, App, HttpResponse, HttpServer};
 
 use super::ping_stats;
 
 struct State {
-    log_dir: String,
+    log_dir: PathBuf,
 }
 
-#[derive(Deserialize)]
+#[derive(Deserialize, Copy, Clone)]
 struct TimeQuery {
     offset: Option<usize>,
     count: Option<usize>,
@@ -59,10 +56,8 @@ fn api_files(state: web::Data<State>) -> HttpResponse {
     HttpResponse::Ok().json(ping_stats::log_files(&state.log_dir))
 }
 
-pub fn run_webserver(ip: SocketAddr, log_dir: &String) {
+pub fn run_webserver(ip: SocketAddr, log_dir: PathBuf) {
     println!("Server is running on {}", ip);
-
-    let log_dir = log_dir.clone();
 
     HttpServer::new(move || {
         App::new()
@@ -77,7 +72,7 @@ pub fn run_webserver(ip: SocketAddr, log_dir: &String) {
             .service(Files::new("/static", "./static"))
     })
     .bind(ip)
-    .expect("Could not configure server: {}")
+    .expect("Could not configure server")
     .run()
     .unwrap()
 }
