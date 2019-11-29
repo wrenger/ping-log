@@ -4,6 +4,10 @@ version = "0.2.0"
 authors = ["Lars Wrenger <lars@wrenger.net>"]
 edition = "2018"
 
+[profile.release]
+opt-level = 3
+lto = true
+
 [dependencies]
 chrono = "0.4.10"
 serde = "1.0.103"
