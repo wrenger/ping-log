@@ -79,17 +79,17 @@
     const RELOAD_BTN = document.getElementById("reload");
 
     function getJSON(url, callback) {
-        var xhttp = new XMLHttpRequest();
-        xhttp.onload = (e) => {
+        var request = new XMLHttpRequest();
+        request.onload = (e) => {
             if (e.target.status === 200) {
                 callback(JSON.parse(e.target.responseText));
             } else {
                 console.error("request error:", e.target.status, e.target.responseURL);
             }
         };
-        xhttp.onerror = (e) => console.error("request error:", e.target.status, e.target.responseURL);
-        xhttp.open("GET", url, true);
-        xhttp.send();
+        request.onerror = (e) => console.error("request error:", e.target.status, e.target.responseURL);
+        request.open("GET", url, true);
+        request.send();
     }
 
     function param(values) {
@@ -223,15 +223,17 @@
     function update() {
         const now = Math.round(Date.now() / 1000);
         const hour = Math.round(moment().subtract(1, 'hour') / 1000);
-        getLog(updateRecentChart, now, hour);
+        getLog((data) => {
+            if (data instanceof Array) {
+                updateStats(data[0])
+                updateRecentChart(data[1])
+            }
+        }, now, hour);
 
         let day = moment().subtract(DAY_SELECT.value, "day");
         const dayStart = Math.round(day.startOf("day").valueOf() / 1000);
         const dayEnd = Math.round(day.endOf("day").valueOf() / 1000);
-        getHistory(function (data) {
-            updateStats(data[0]);
-            updateDailyChart(data);
-        }, dayEnd, dayStart);
+        getHistory(updateDailyChart, dayEnd, dayStart);
     }
 
     function init() {

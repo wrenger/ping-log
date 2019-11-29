@@ -3,6 +3,7 @@ use std::f64::NAN;
 
 use serde::Serialize;
 
+/// Ping data (timestamp and duration in ms)
 #[derive(Debug, Clone, Serialize)]
 pub struct Ping {
     pub time: i64,
@@ -31,6 +32,7 @@ impl TryFrom<String> for Ping {
     }
 }
 
+/// Accumulated `Ping`s over a certain period of time
 #[derive(Debug, Clone, Serialize)]
 pub struct History {
     pub time: i64,
@@ -104,14 +106,22 @@ mod test {
 
     #[test]
     fn test_history_from() {
+        // No pings
         let log = vec![];
         let generated = History::from(0_i64, &log[..]);
         assert_eq!(History::new(0, NAN, NAN, NAN, NAN, 0), generated);
 
+        // Single ping
         let log = vec![Ping::new(0, 20.0)];
         let generated = History::from(0_i64, &log[..]);
         assert_eq!(History::new(0, 20.0, 20.0, 20.0, 0.0, 1), generated);
 
+        // 100% lost
+        let log = vec![Ping::new(0, 1000.0)];
+        let generated = History::from(0_i64, &log[..]);
+        assert_eq!(History::new(0, NAN, NAN, NAN, 1.0, 1), generated);
+
+        // Multiple pings
         let log = vec![
             Ping::new(0, 40.0),
             Ping::new(0, 20.0),

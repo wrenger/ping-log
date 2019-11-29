@@ -6,6 +6,7 @@ use std::io::{BufRead, BufReader};
 
 use std::path::Path;
 
+/// Returns the filenames of the log files in alphabetical order
 pub fn log_files<P: AsRef<Path>>(dir: P) -> Vec<String> {
     let mut files: Vec<_> = read_dir(dir)
         .map(|f| {
@@ -17,6 +18,7 @@ pub fn log_files<P: AsRef<Path>>(dir: P) -> Vec<String> {
     files
 }
 
+/// Parses the log files and returns the pings for the given range
 pub fn read_log<P: AsRef<Path>>(
     log_dir: P,
     offset: usize,
@@ -25,22 +27,24 @@ pub fn read_log<P: AsRef<Path>>(
     end: i64,
 ) -> Vec<Ping> {
     read_log_all(log_dir.as_ref())
-        .skip_while(|ping| start != 0 && ping.time > start)
+        .skip_while(|ping| start != 0 && ping.time >= start)
         .skip(offset)
         .take(count)
         .take_while(|ping| end == 0 || ping.time >= end)
         .collect::<Vec<_>>()
 }
 
+/// Returns an iterator over the past pings from the log files
 fn read_log_all(log_dir: &Path) -> impl Iterator<Item = Ping> {
     let log_dir_buf = log_dir.to_owned();
-    log_files(log_dir)
+    let mut files = log_files(log_dir);
+    files.reverse();
+    files
         .into_iter()
-        .rev()
-        .map(move |file| read_log_file(log_dir_buf.to_owned(), file).into_iter())
-        .flatten()
+        .flat_map(move |file| read_log_file(log_dir_buf.to_owned(), file).into_iter())
 }
 
+/// Parses the logfile and returns the pings
 fn read_log_file<P: AsRef<Path>, F: AsRef<Path>>(log_dir: P, file: F) -> Vec<Ping> {
     let filename = log_dir.as_ref().join(file);
     if let Ok(file) = File::open(&filename) {
@@ -56,6 +60,7 @@ fn read_log_file<P: AsRef<Path>, F: AsRef<Path>>(log_dir: P, file: F) -> Vec<Pin
     }
 }
 
+/// Returns the accumulated pings per hour for the given period
 pub fn read_history<P: AsRef<Path>>(
     log_dir: P,
     offset: usize,
@@ -63,10 +68,11 @@ pub fn read_history<P: AsRef<Path>>(
     start: i64,
     end: i64,
 ) -> Vec<History> {
-    let pings = read_log(log_dir, offset, count * 60, start, end);
+    let pings = read_log(log_dir, offset, count * 65, start, end);
     generate_history(&pings[..])
 }
 
+/// Generates a list of accumulated pings per hour
 fn generate_history(log: &[Ping]) -> Vec<History> {
     let mut chunks: Vec<History> = vec![];
     let mut start = 0;
@@ -79,7 +85,7 @@ fn generate_history(log: &[Ping]) -> Vec<History> {
 
     for l in log {
         while l.time < until {
-            chunks.push(History::from(until, &log[start..end]));
+            chunks.push(History::from(until + 3600, &log[start..end]));
 
             start = end;
             until -= 3600;
@@ -87,7 +93,7 @@ fn generate_history(log: &[Ping]) -> Vec<History> {
         end += 1;
     }
     if end > start {
-        chunks.push(History::from(until, &log[start..end]));
+        chunks.push(History::from(until + 3600, &log[start..end]));
     }
 
     chunks
@@ -107,11 +113,11 @@ mod test {
 
         assert_eq!(2, history.len());
         assert_eq!(
-            History::new(1536062400, 10.0, 10.0, 10.0, 0.0, 1),
+            History::new(1536066000, 10.0, 10.0, 10.0, 0.0, 1),
             history[0]
         );
         assert_eq!(
-            History::new(1536058800, 20.0, 20.0, 20.0, 0.0, 1),
+            History::new(1536062400, 20.0, 20.0, 20.0, 0.0, 1),
             history[1]
         );
 
@@ -122,12 +128,12 @@ mod test {
 
         assert_eq!(3, history.len());
         assert_eq!(
-            History::new(1536062400, 10.0, 10.0, 10.0, 0.0, 1),
+            History::new(1536066000, 10.0, 10.0, 10.0, 0.0, 1),
             history[0]
         );
-        assert_eq!(History::new(1536058800, NAN, NAN, NAN, NAN, 0), history[1]);
+        assert_eq!(History::new(1536062400, NAN, NAN, NAN, NAN, 0), history[1]);
         assert_eq!(
-            History::new(1536055200, 20.0, 20.0, 20.0, 0.0, 1),
+            History::new(1536058800, 20.0, 20.0, 20.0, 0.0, 1),
             history[2]
         );
     }

@@ -26,6 +26,7 @@ cargo run
 ```bash
 cargo run -- <args>
 ```
+
 | Argument                 | Description                        |
 |--------------------------|------------------------------------|
 | -h,--help                | Show this help message and exit    |

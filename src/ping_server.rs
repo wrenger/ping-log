@@ -5,6 +5,7 @@ use actix_files::{Files, NamedFile};
 use actix_web::{web, App, HttpResponse, HttpServer};
 use serde::Deserialize;
 
+use super::ping::History;
 use super::ping_stats;
 
 struct State {
@@ -31,12 +32,16 @@ fn static_resource(path: PathBuf) -> Option<NamedFile> {
 
 // "/api/pings?<offset>&<count>&<start>&<end>"
 fn api_pings(query: web::Query<TimeQuery>, state: web::Data<State>) -> HttpResponse {
-    HttpResponse::Ok().json(ping_stats::read_log(
+    let pings = ping_stats::read_log(
         &state.log_dir,
         query.offset.unwrap_or(0),
         query.count.unwrap_or(60),
         query.start.unwrap_or(0),
         query.end.unwrap_or(0),
+    );
+    HttpResponse::Ok().json((
+        History::from(pings.first().map(|p| p.time).unwrap_or(0), &pings),
+        pings,
     ))
 }
 
@@ -56,6 +61,7 @@ fn api_files(state: web::Data<State>) -> HttpResponse {
     HttpResponse::Ok().json(ping_stats::log_files(&state.log_dir))
 }
 
+/// Starts the ping log webserver on the given `ip`
 pub fn run_webserver(ip: SocketAddr, log_dir: PathBuf) {
     println!("Server is running on {}", ip);
 
