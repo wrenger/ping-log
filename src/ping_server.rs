@@ -40,7 +40,7 @@ fn api_pings(query: web::Query<TimeQuery>, state: web::Data<State>) -> HttpRespo
         query.end.unwrap_or(0),
     );
     HttpResponse::Ok().json((
-        History::from(pings.first().map(|p| p.time).unwrap_or(0), &pings),
+        History::from(pings.first().map_or(0, |p| p.time), &pings),
         pings,
     ))
 }

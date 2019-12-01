@@ -8,14 +8,15 @@ use std::path::Path;
 
 /// Returns the filenames of the log files in alphabetical order
 pub fn log_files<P: AsRef<Path>>(dir: P) -> Vec<String> {
-    let mut files: Vec<_> = read_dir(dir)
-        .map(|f| {
-            f.filter_map(|s| s.map(|s| s.file_name().to_string_lossy().into_owned()).ok())
-                .collect()
-        })
-        .unwrap_or_default();
-    files.sort();
-    files
+    if let Ok(files) = read_dir(dir) {
+        let mut files: Vec<_> = files
+            .filter_map(|s| s.map(|s| s.file_name().to_string_lossy().into_owned()).ok())
+            .collect();
+        files.sort_unstable();
+        files
+    } else {
+        vec![]
+    }
 }
 
 /// Parses the log files and returns the pings for the given range
@@ -31,7 +32,7 @@ pub fn read_log<P: AsRef<Path>>(
         .skip(offset)
         .take(count)
         .take_while(|ping| end == 0 || ping.time >= end)
-        .collect::<Vec<_>>()
+        .collect()
 }
 
 /// Returns an iterator over the past pings from the log files
@@ -48,10 +49,10 @@ fn read_log_all(log_dir: &Path) -> impl Iterator<Item = Ping> {
 fn read_log_file<P: AsRef<Path>, F: AsRef<Path>>(log_dir: P, file: F) -> Vec<Ping> {
     let filename = log_dir.as_ref().join(file);
     if let Ok(file) = File::open(&filename) {
-        let mut pings = BufReader::new(file)
+        let mut pings: Vec<Ping> = BufReader::new(file)
             .lines()
             .filter_map(|line| line.ok().and_then(|line| Ping::try_from(line).ok()))
-            .collect::<Vec<_>>();
+            .collect();
         pings.reverse();
         pings
     } else {

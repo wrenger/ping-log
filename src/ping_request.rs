@@ -83,7 +83,7 @@ fn remove_old_logs<P: AsRef<Path>>(dir: P) {
 
 /// Is the given `filename` older than the formatted date `oldest`
 fn older(filename: &String, oldest: &String) -> bool {
-    return filename.len() == 10 && filename.ends_with(".txt") && filename < oldest;
+    filename.len() == 10 && filename.ends_with(".txt") && filename < oldest
 }
 
 #[cfg(test)]
