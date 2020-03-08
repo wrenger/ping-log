@@ -4,11 +4,6 @@
 //! It is designed for a raspberry pi or other unix based IoT device running
 //! permanently inside the network.
 
-mod ping;
-mod ping_request;
-mod ping_server;
-mod ping_stats;
-
 use std::net::SocketAddr;
 use std::path::PathBuf;
 use std::thread;
@@ -16,6 +11,11 @@ use std::time::Duration;
 
 use chrono::{Local, Timelike};
 use structopt::StructOpt;
+
+mod ping;
+mod ping_request;
+mod ping_server;
+mod ping_stats;
 
 /// Command line options
 #[derive(Debug, StructOpt)]
@@ -41,7 +41,8 @@ struct Opt {
     web_host: SocketAddr,
 }
 
-fn main() {
+#[actix_rt::main]
+async fn main() -> std::io::Result<()> {
     let opt = Opt::from_args();
 
     {
@@ -56,6 +57,6 @@ fn main() {
 
             ping_request::ping_request(&ping_host, &log_dir);
         });
-    }
-    ping_server::run_webserver(opt.web_host, opt.logs);
+    };
+    ping_server::run_webserver(opt.web_host, opt.logs).await
 }

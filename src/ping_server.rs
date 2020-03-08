@@ -1,8 +1,8 @@
 use std::net::SocketAddr;
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 
 use actix_files::{Files, NamedFile};
-use actix_web::{web, App, HttpResponse, HttpServer};
+use actix_web::{web, App, HttpResponse, HttpServer, Result};
 use serde::Deserialize;
 
 use super::ping::History;
@@ -20,18 +20,13 @@ struct TimeQuery {
     end: Option<i64>,
 }
 
-// "/"
-fn index() -> Option<NamedFile> {
-    static_resource(PathBuf::from("index.html"))
+#[actix_web::get("/")]
+async fn index() -> Result<NamedFile> {
+    Ok(NamedFile::open("static/index.html")?)
 }
 
-// "/static/<path..>"
-fn static_resource(path: PathBuf) -> Option<NamedFile> {
-    NamedFile::open(Path::new("static/").join(path)).ok()
-}
-
-// "/api/pings?<offset>&<count>&<start>&<end>"
-fn api_pings(query: web::Query<TimeQuery>, state: web::Data<State>) -> HttpResponse {
+#[actix_web::get("/api/pings")]
+async fn api_pings(query: web::Query<TimeQuery>, state: web::Data<State>) -> HttpResponse {
     let pings = ping_stats::read_log(
         &state.log_dir,
         query.offset.unwrap_or(0),
@@ -45,8 +40,8 @@ fn api_pings(query: web::Query<TimeQuery>, state: web::Data<State>) -> HttpRespo
     ))
 }
 
-// "/api/history?<offset>&<count>&<start>&<end>"
-fn api_history(query: web::Query<TimeQuery>, state: web::Data<State>) -> HttpResponse {
+#[actix_web::get("/api/history")]
+async fn api_history(query: web::Query<TimeQuery>, state: web::Data<State>) -> HttpResponse {
     HttpResponse::Ok().json(ping_stats::read_history(
         &state.log_dir,
         query.offset.unwrap_or(0),
@@ -56,13 +51,13 @@ fn api_history(query: web::Query<TimeQuery>, state: web::Data<State>) -> HttpRes
     ))
 }
 
-// "/api/files"
-fn api_files(state: web::Data<State>) -> HttpResponse {
+#[actix_web::get("/api/files")]
+async fn api_files(state: web::Data<State>) -> HttpResponse {
     HttpResponse::Ok().json(ping_stats::log_files(&state.log_dir))
 }
 
 /// Starts the ping log webserver on the given `ip`
-pub fn run_webserver(ip: SocketAddr, log_dir: PathBuf) {
+pub async fn run_webserver(ip: SocketAddr, log_dir: PathBuf) -> std::io::Result<()> {
     println!("Server is running on {}", ip);
 
     HttpServer::new(move || {
@@ -70,15 +65,15 @@ pub fn run_webserver(ip: SocketAddr, log_dir: PathBuf) {
             .data(State {
                 log_dir: log_dir.clone(),
             })
-            .route("/", web::get().to(index))
-            .route("/api/pings", web::get().to(api_pings))
-            .route("/api/history", web::get().to(api_history))
-            .route("/api/files", web::get().to(api_files))
+            .service(index)
+            .service(api_pings)
+            .service(api_history)
+            .service(api_files)
             .service(Files::new("/api/file", log_dir.clone()))
             .service(Files::new("/static", "./static"))
     })
     .bind(ip)
     .expect("Could not configure server")
     .run()
-    .unwrap()
+    .await
 }
