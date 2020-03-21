@@ -5,8 +5,8 @@ use actix_files::{Files, NamedFile};
 use actix_web::{web, App, HttpResponse, HttpServer, Result};
 use serde::Deserialize;
 
-use super::mc;
 use super::hw;
+use super::mc;
 use super::ping::History;
 use super::ping_stats;
 
@@ -26,6 +26,11 @@ struct TimeQuery {
 #[actix_web::get("/")]
 async fn index() -> Result<NamedFile> {
     Ok(NamedFile::open("static/index.html")?)
+}
+
+#[actix_web::get("/robots.txt")]
+async fn robots() -> HttpResponse {
+    HttpResponse::Ok().body("User-agent: *\nDisallow: /\n")
 }
 
 #[actix_web::get("/api/pings")]
@@ -70,13 +75,10 @@ async fn api_mc(state: web::Data<State>) -> HttpResponse {
     )
 }
 
-
 #[actix_web::get("/api/hw")]
 async fn api_hw() -> HttpResponse {
     HttpResponse::Ok().json(hw::Status::request())
 }
-
-
 
 /// Starts the ping log webserver on the given `ip`
 pub async fn run(ip: SocketAddr, log_dir: PathBuf, mc_hosts: Vec<String>) -> std::io::Result<()> {
@@ -89,6 +91,7 @@ pub async fn run(ip: SocketAddr, log_dir: PathBuf, mc_hosts: Vec<String>) -> std
                 mc_hosts: mc_hosts.clone(),
             })
             .service(index)
+            .service(robots)
             .service(api_pings)
             .service(api_history)
             .service(api_files)
