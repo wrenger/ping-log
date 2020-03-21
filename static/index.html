@@ -13,13 +13,27 @@
         <div class="title">
             <h1>Ping Log</h1>
         </div>
-        <div class="stats spin" id="stats">
+        <div class="stats" id="stats">
             <div>
                 <span id="stats-min" class="stats-min">0.0</span>
                 <span id="stats-avg" class="stats-avg">0.0</span>
                 <span id="stats-max" class="stats-max">0.0</span>
             </div>
             <div id="stats-lost" class="stats-lost"></div>
+        </div>
+        <div id="mc-root">
+            <div class="stats" id="mc" hidden>
+                <table>
+                    <tr>
+                        <th id="mc-addr">-</th>
+                        <th id="mc-version">-</th>
+                    </tr>
+                    <tr>
+                        <td id="mc-description">offline</td>
+                        <td><span id="mc-curr">-</span>/<span id="mc-max">-</span></td>
+                    </tr>
+                </table>
+            </div>
         </div>
         <div class="box">
             <h2>Recent Hour</h2>
@@ -33,6 +47,10 @@
             <div>
                 <canvas class="chart" id="daily-log"></canvas>
             </div>
+        </div>
+        <div id="hw" class="stats selectable">
+            <div>CPU Load: <span id="hw-load">0.0</span>%</div>
+            <div>Temperature: <span id="hw-temperature">0.0</span>°</div>
         </div>
     </div>
     <div class="reload" id="reload">↺</div>

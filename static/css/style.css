@@ -37,7 +37,7 @@ div.stats {
     background-color: var(--theme-lighter);
     border-radius: 4px;
     text-align: center;
-    padding: 15px 0;
+    padding: 15px;
     max-width: 375px;
 }
 

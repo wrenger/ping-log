@@ -3,6 +3,8 @@
 
     const API_LOG = "/api/pings";
     const API_HISTORY = "/api/history";
+    const API_HW = "/api/hw";
+    const API_MC = "/api/mc";
 
     Chart.defaults.global.defaultFontColor = "#eeeeee"
 
@@ -78,16 +80,22 @@
     const DAY_SELECT = document.getElementById('select-day');
     const RELOAD_BTN = document.getElementById("reload");
 
-    function getJSON(url, callback) {
+    function getJSON(url, callback, err_callback = null) {
         var request = new XMLHttpRequest();
         request.onload = (e) => {
             if (e.target.status === 200) {
                 callback(JSON.parse(e.target.responseText));
+            } else if (err_callback != null) {
+                err_callback(e);
             } else {
                 console.error("request error:", e.target.status, e.target.responseURL);
             }
         };
-        request.onerror = (e) => console.error("request error:", e.target.status, e.target.responseURL);
+        if (err_callback != null) {
+            request.onerror = err_callback;
+        } else {
+            request.onerror = e => console.error("request error:", e.target.status, e.target.responseURL);
+        }
         request.open("GET", url, true);
         request.send();
     }
@@ -220,15 +228,54 @@
         });
     }
 
+    function getHw(callback) {
+        getJSON(encodeURI(API_HW), callback, _ => callback([]));
+    }
+
+    function updateHw(status) {
+        if (status instanceof Object) {
+            document.getElementById("hw-load").textContent = status["load"];
+            document.getElementById("hw-temperature").textContent = status["temperature"];
+        }
+    }
+
+    function getMc(callback) {
+        getJSON(encodeURI(API_MC), callback, _ => callback([]));
+    }
+
+    function updateMc(stats) {
+        const mcRoot = document.getElementById("mc-root");
+        while (mcRoot.childElementCount > 1) {
+            mcRoot.removeChild(mcRoot.lastElementChild);
+        }
+        const mcTemplate = mcRoot.firstElementChild;
+        if (stats instanceof Array) {
+            stats.forEach(status => {
+                if (status instanceof Object) {
+                    let elem = mcTemplate.cloneNode(true);
+                    elem.hidden = false;
+                    elem.querySelector("#mc-addr").textContent = status["addr"];
+                    elem.querySelector("#mc-description").textContent = status["description"];
+                    elem.querySelector("#mc-version").textContent = status["version"];
+                    elem.querySelector("#mc-curr").textContent = status["players"];
+                    elem.querySelector("#mc-max").textContent = status["max_players"];
+                    mcRoot.appendChild(elem);
+                }
+            });
+        }
+    }
+
     function update() {
         const now = Math.round(Date.now() / 1000);
         const hour = Math.round(moment().subtract(1, 'hour') / 1000);
         getLog((data) => {
             if (data instanceof Array) {
-                updateStats(data[0])
-                updateRecentChart(data[1])
+                updateStats(data[0]);
+                updateRecentChart(data[1]);
             }
         }, now, hour);
+        getMc(updateMc);
+        getHw(updateHw);
 
         let day = moment().subtract(DAY_SELECT.value, "day");
         const dayStart = Math.round(day.startOf("day").valueOf() / 1000);

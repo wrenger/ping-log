@@ -5,11 +5,14 @@ use actix_files::{Files, NamedFile};
 use actix_web::{web, App, HttpResponse, HttpServer, Result};
 use serde::Deserialize;
 
+use super::mc;
+use super::hw;
 use super::ping::History;
 use super::ping_stats;
 
 struct State {
     log_dir: PathBuf,
+    mc_hosts: Vec<String>,
 }
 
 #[derive(Deserialize, Copy, Clone)]
@@ -56,19 +59,41 @@ async fn api_files(state: web::Data<State>) -> HttpResponse {
     HttpResponse::Ok().json(ping_stats::log_files(&state.log_dir))
 }
 
+#[actix_web::get("/api/mc")]
+async fn api_mc(state: web::Data<State>) -> HttpResponse {
+    HttpResponse::Ok().json(
+        &state
+            .mc_hosts
+            .iter()
+            .map(|addr| mc::Status::request(addr).unwrap_or(mc::Status::default(addr)))
+            .collect::<Vec<_>>(),
+    )
+}
+
+
+#[actix_web::get("/api/hw")]
+async fn api_hw() -> HttpResponse {
+    HttpResponse::Ok().json(hw::Status::request())
+}
+
+
+
 /// Starts the ping log webserver on the given `ip`
-pub async fn run_webserver(ip: SocketAddr, log_dir: PathBuf) -> std::io::Result<()> {
+pub async fn run(ip: SocketAddr, log_dir: PathBuf, mc_hosts: Vec<String>) -> std::io::Result<()> {
     println!("Server is running on {}", ip);
 
     HttpServer::new(move || {
         App::new()
             .data(State {
                 log_dir: log_dir.clone(),
+                mc_hosts: mc_hosts.clone(),
             })
             .service(index)
             .service(api_pings)
             .service(api_history)
             .service(api_files)
+            .service(api_mc)
+            .service(api_hw)
             .service(Files::new("/api/file", log_dir.clone()))
             .service(Files::new("/static", "./static"))
     })

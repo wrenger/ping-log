@@ -12,10 +12,12 @@ use std::time::Duration;
 use chrono::{Local, Timelike};
 use structopt::StructOpt;
 
+mod hw;
+mod mc;
 mod ping;
 mod ping_request;
-mod ping_server;
 mod ping_stats;
+mod server;
 
 /// Command line options
 #[derive(Debug, StructOpt)]
@@ -39,6 +41,10 @@ struct Opt {
     /// Address and port of this webserver
     #[structopt(short, long, default_value = "127.0.0.1:8081")]
     web_host: SocketAddr,
+
+    /// Address and port of this webserver
+    #[structopt(short, long)]
+    mc_hosts: Vec<String>,
 }
 
 #[actix_rt::main]
@@ -58,5 +64,5 @@ async fn main() -> std::io::Result<()> {
             ping_request::ping_request(&ping_host, &log_dir);
         });
     };
-    ping_server::run_webserver(opt.web_host, opt.logs).await
+    server::run(opt.web_host, opt.logs, opt.mc_hosts).await
 }
