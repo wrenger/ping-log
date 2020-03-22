@@ -303,10 +303,6 @@ table th {
     padding: 5px 15px;
     margin: 0px;
     border: none;
-
-    -webkit-user-select: text;
-    -moz-user-select: text;
-    -ms-user-select: text;
     user-select: text;
 }
 
@@ -315,8 +311,5 @@ table th {
 }
 
 .selectable {
-    -webkit-user-select: text;
-    -moz-user-select: text;
-    -ms-user-select: text;
     user-select: text;
 }

@@ -1,7 +1,4 @@
 body {
-    -webkit-user-select: none;
-    -moz-user-select: none;
-    -ms-user-select: none;
     user-select: none;
 }
 
@@ -39,22 +36,17 @@ div.stats {
     text-align: center;
     padding: 15px;
     max-width: 375px;
+    user-select: text;
 }
 
 span.stats-min,
 span.stats-max,
-span.stats-avg,
 div.stats-lost {
-    -webkit-user-select: text;
-    -moz-user-select: text;
-    -ms-user-select: text;
-    user-select: text;
     font-size: 20px;
 }
 
 span.stats-avg {
     font-size: 26px;
-    padding: 0 20px;
 }
 
 span.stats-min::after,

@@ -129,10 +129,10 @@
 
     function updateStats(stats) {
         if (stats instanceof Object) {
-            document.getElementById("stats-min").textContent = stats["min"];
-            document.getElementById("stats-max").textContent = stats["max"];
-            document.getElementById("stats-avg").textContent = stats["avg"];
-            document.getElementById("stats-lost").textContent = stats["lost"] * 100;
+            document.getElementById("stats-min").textContent = stats["min"].toFixed(2);
+            document.getElementById("stats-max").textContent = stats["max"].toFixed(2);
+            document.getElementById("stats-avg").textContent = stats["avg"].toFixed(2);
+            document.getElementById("stats-lost").textContent = (stats["lost"] * 100).toFixed(2);
         }
     }
 
@@ -234,8 +234,10 @@
 
     function updateHw(status) {
         if (status instanceof Object) {
-            document.getElementById("hw-load").textContent = status["load"];
-            document.getElementById("hw-temperature").textContent = status["temperature"];
+            document.getElementById("hw-load").textContent = status["load"] * 100;
+            document.getElementById("hw-temperature").textContent = status["temperature"].toFixed(2);
+            document.getElementById("hw-mem-used").textContent = status["memory_used"].toFixed(2);
+            document.getElementById("hw-mem-total").textContent = status["memory_total"].toFixed(2);
         }
     }
 
