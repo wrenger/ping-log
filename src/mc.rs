@@ -1,6 +1,5 @@
 use std::io::{self, Read, Write};
 use std::net::{TcpStream, ToSocketAddrs};
-use std::slice;
 use std::time::Duration;
 
 use serde::Serialize;
@@ -22,18 +21,20 @@ impl Status {
 
         let response = {
             let mut stream = TcpStream::connect_timeout(&socket_addr, Duration::from_secs(1))?;
-            stream.write(&[0xFE, 0x01])?;
+            stream.write_all(&[0xFE, 0x01])?;
             let mut response = vec![0; 512];
-            stream.read(&mut response[..])?;
+            let _ = stream.read(&mut response[..])?;
             response
         };
         Status::parse(addr, &response)
     }
 
     fn parse(addr: &str, response: &[u8]) -> io::Result<Status> {
-        let response: &[u16] =
-            unsafe { slice::from_raw_parts(response.as_ptr() as *const _, response.len() / 2) };
-        let data = String::from_utf16_lossy(response);
+        let response = response
+            .chunks_exact(2)
+            .map(|e| u16::from_le_bytes([e[0], e[1]]))
+            .collect::<Vec<_>>();
+        let data = String::from_utf16_lossy(&response);
         let data = data.splitn(7, '\0').collect::<Vec<_>>();
         if data.len() == 7 {
             Ok(Status {

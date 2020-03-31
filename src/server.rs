@@ -70,7 +70,7 @@ async fn api_mc(state: web::Data<State>) -> HttpResponse {
         &state
             .mc_hosts
             .iter()
-            .map(|addr| mc::Status::request(addr).unwrap_or(mc::Status::default(addr)))
+            .map(|addr| mc::Status::request(addr).unwrap_or_else(|_| mc::Status::default(addr)))
             .collect::<Vec<_>>(),
     )
 }

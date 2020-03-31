@@ -1,7 +1,7 @@
 use std::fs::OpenOptions;
 use std::fs::{read_dir, remove_file};
 use std::io::{Result, Write};
-use std::path::{Path, PathBuf};
+use std::path::Path;
 use std::process::Command;
 
 use chrono::{Duration, Local};
@@ -9,14 +9,14 @@ use chrono::{Duration, Local};
 use super::ping::Ping;
 
 /// Performs an ping request and stores the result in the log file
-pub fn ping_request(host: &String, log_dir: &PathBuf) {
+pub fn ping_request(host: &str, log_dir: &Path) {
     let log = perform_request(host);
     let file_name = Local::today().format("%y%m%d.txt").to_string();
 
-    write_request(log_dir, file_name, log).expect("write log error");
+    write_request(log_dir, Path::new(&file_name), log).expect("write log error");
 }
 
-fn perform_request(host: &String) -> Ping {
+fn perform_request(host: &str) -> Ping {
     let time = Local::now().timestamp();
     let output = Command::new("ping")
         .args(&["-c 1", "-w 1", &host])
@@ -34,7 +34,7 @@ fn perform_request(host: &String) -> Ping {
         time,
         String::from_utf8(output.stdout)
             .ok()
-            .map_or(1000.0, |out| parse_output(out)),
+            .map_or(1000.0, parse_output),
     )
 }
 
@@ -49,8 +49,8 @@ fn parse_output(output: String) -> f64 {
     1000.0
 }
 
-fn write_request<P: AsRef<Path>, Q: AsRef<Path>>(dir: P, filename: Q, log: Ping) -> Result<()> {
-    let path = Path::new(dir.as_ref()).join(filename);
+fn write_request(dir: &Path, filename: &Path, log: Ping) -> Result<()> {
+    let path = dir.join(filename);
 
     if !path.exists() {
         remove_old_logs(dir);
@@ -65,7 +65,7 @@ fn write_request<P: AsRef<Path>, Q: AsRef<Path>>(dir: P, filename: Q, log: Ping)
     Ok(())
 }
 
-fn remove_old_logs<P: AsRef<Path>>(dir: P) {
+fn remove_old_logs(dir: &Path) {
     let oldest = Local::now() - Duration::weeks(8);
     let oldest = oldest.format("%y%m%d").to_string();
 
@@ -82,7 +82,7 @@ fn remove_old_logs<P: AsRef<Path>>(dir: P) {
 }
 
 /// Is the given `filename` older than the formatted date `oldest`
-fn older(filename: &String, oldest: &String) -> bool {
+fn older(filename: &str, oldest: &str) -> bool {
     filename.len() == 10 && filename.ends_with(".txt") && filename < oldest
 }
 
@@ -94,12 +94,12 @@ mod test {
     fn test_old_filename() {
         assert_eq!(10, "191129.txt".len());
 
-        assert!(!older(&"malformed".into(), &"191129".into()));
+        assert!(!older("malformed", "191129"));
 
-        assert!(older(&"191029.txt".into(), &"191129".into()));
-        assert!(older(&"191129.txt".into(), &"191130".into()));
+        assert!(older("191029.txt", "191129"));
+        assert!(older("191129.txt", "191130"));
 
-        assert!(!older(&"191129.txt".into(), &"191129".into()));
-        assert!(!older(&"191129.txt".into(), &"191128".into()));
+        assert!(!older("191129.txt", "191129"));
+        assert!(!older("191129.txt", "191128"));
     }
 }

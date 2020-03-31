@@ -46,16 +46,16 @@ pub struct History {
 impl History {
     pub fn new(time: i64, min: f64, max: f64, avg: f64, lost: f64, count: u32) -> History {
         History {
-            time: time,
-            min: min,
-            max: max,
-            avg: avg,
-            lost: lost,
-            count: count,
+            time,
+            min,
+            max,
+            avg,
+            lost,
+            count,
         }
     }
 
-    pub fn from<'a>(time: i64, pings: &'a [Ping]) -> History {
+    pub fn from(time: i64, pings: &[Ping]) -> History {
         let mut min = 1000.0;
         let mut max = 0.0;
         let mut sum = 0.0;

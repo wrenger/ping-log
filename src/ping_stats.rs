@@ -7,7 +7,7 @@ use std::io::{BufRead, BufReader};
 use std::path::Path;
 
 /// Returns the filenames of the log files in alphabetical order
-pub fn log_files<P: AsRef<Path>>(dir: P) -> Vec<String> {
+pub fn log_files(dir: &Path) -> Vec<String> {
     if let Ok(files) = read_dir(dir) {
         let mut files: Vec<_> = files
             .filter_map(|s| s.map(|s| s.file_name().to_string_lossy().into_owned()).ok())
@@ -78,7 +78,7 @@ fn generate_history(log: &[Ping]) -> Vec<History> {
     let mut chunks: Vec<History> = vec![];
     let mut start = 0;
     let mut end = 0;
-    let mut until = if log.len() > 0 {
+    let mut until = if !log.is_empty() {
         log[0].time / 3600 * 3600
     } else {
         0
