@@ -20,7 +20,7 @@ impl Status {
             .ok_or(io::ErrorKind::AddrNotAvailable)?;
 
         let response = {
-            let mut stream = TcpStream::connect_timeout(&socket_addr, Duration::from_secs(1))?;
+            let mut stream = TcpStream::connect_timeout(&socket_addr, Duration::from_millis(100))?;
             stream.write_all(&[0xFE, 0x01])?;
             let mut response = vec![0; 512];
             let _ = stream.read(&mut response[..])?;

@@ -102,4 +102,13 @@ mod test {
         assert!(!older("191129.txt", "191129"));
         assert!(!older("191129.txt", "191128"));
     }
+
+    #[test]
+    fn test_time() {
+        use chrono::{Local, Utc};
+        println!("Current time: {}", Local::now());
+        println!("Current time: {}", Local::now().timestamp());
+        println!("UTC time: {}", Utc::now());
+        println!("UTC time: {}", Utc::now().timestamp());
+    }
 }

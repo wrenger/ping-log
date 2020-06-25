@@ -129,9 +129,9 @@
 
     function updateStats(stats) {
         if (stats instanceof Object) {
-            document.getElementById("stats-min").textContent = stats["min"].toFixed(2);
-            document.getElementById("stats-max").textContent = stats["max"].toFixed(2);
-            document.getElementById("stats-avg").textContent = stats["avg"].toFixed(2);
+            document.getElementById("stats-min").textContent = (stats["min"] || 0).toFixed(2);
+            document.getElementById("stats-max").textContent = (stats["max"] || 0).toFixed(2);
+            document.getElementById("stats-avg").textContent = (stats["avg"] || 0).toFixed(2);
             document.getElementById("stats-lost").textContent = (stats["lost"] * 100).toFixed(2);
         }
     }
