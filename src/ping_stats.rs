@@ -6,11 +6,16 @@ use std::io::{BufRead, BufReader};
 
 use std::path::Path;
 
+pub fn is_log_file(name: &str) -> bool {
+    name.len() == 10 && name.ends_with(".txt") && name[0..6].chars().all(char::is_numeric)
+}
+
 /// Returns the filenames of the log files in alphabetical order
 pub fn log_files(dir: &Path) -> Vec<String> {
     if let Ok(files) = read_dir(dir) {
         let mut files: Vec<_> = files
             .filter_map(|s| s.map(|s| s.file_name().to_string_lossy().into_owned()).ok())
+            .filter(|name| is_log_file(name))
             .collect();
         files.sort_unstable();
         files

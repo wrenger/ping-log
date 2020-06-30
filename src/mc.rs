@@ -1,5 +1,6 @@
 use std::io::{self, Read, Write};
 use std::net::{TcpStream, ToSocketAddrs};
+use std::sync::RwLock;
 use std::time::Duration;
 
 use serde::Serialize;
@@ -13,7 +14,19 @@ pub struct Status {
     max_players: usize,
 }
 
+
 impl Status {
+    pub fn refresh<S: AsRef<str>>(state: &RwLock<Vec<Status>>, addresses: &[S]) {
+        let mut current_status = Vec::with_capacity(addresses.len());
+        for addr in addresses {
+            current_status.push(
+                Status::request(addr.as_ref()).unwrap_or_else(|_| Status::default(addr.as_ref())),
+            );
+        }
+        let mut status = state.write().unwrap();
+        *status = current_status;
+    }
+
     pub fn request(addr: &str) -> io::Result<Status> {
         let socket_addr = ToSocketAddrs::to_socket_addrs(&addr)?
             .next()
@@ -49,7 +62,7 @@ impl Status {
         }
     }
 
-    pub fn default(addr: &str) -> Status {
+    fn default(addr: &str) -> Status {
         Status {
             addr: String::from(addr),
             version: String::new(),

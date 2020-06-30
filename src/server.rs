@@ -1,5 +1,6 @@
 use std::net::SocketAddr;
 use std::path::PathBuf;
+use std::sync::{Arc, RwLock};
 
 use actix_files::{Files, NamedFile};
 use actix_web::{web, App, HttpResponse, HttpServer, Result};
@@ -12,7 +13,7 @@ use super::ping_stats;
 
 struct State {
     log_dir: PathBuf,
-    mc_hosts: Vec<String>,
+    mc_hosts: Arc<RwLock<Vec<mc::Status>>>,
 }
 
 #[derive(Deserialize, Copy, Clone)]
@@ -66,13 +67,8 @@ async fn api_files(state: web::Data<State>) -> HttpResponse {
 
 #[actix_web::get("/api/mc")]
 async fn api_mc(state: web::Data<State>) -> HttpResponse {
-    HttpResponse::Ok().json(
-        &state
-            .mc_hosts
-            .iter()
-            .map(|addr| mc::Status::request(addr).unwrap_or_else(|_| mc::Status::default(addr)))
-            .collect::<Vec<_>>(),
-    )
+    let mc_state = state.mc_hosts.read().unwrap();
+    HttpResponse::Ok().json( &*mc_state )
 }
 
 #[actix_web::get("/api/hw")]
@@ -81,7 +77,7 @@ async fn api_hw() -> HttpResponse {
 }
 
 /// Starts the ping log webserver on the given `ip`
-pub async fn run(ip: SocketAddr, log_dir: PathBuf, mc_hosts: Vec<String>) -> std::io::Result<()> {
+pub async fn run(ip: SocketAddr, log_dir: PathBuf, mc_hosts: Arc<RwLock<Vec<mc::Status>>>) -> std::io::Result<()> {
     println!("Server is running on {}", ip);
 
     HttpServer::new(move || {
@@ -97,7 +93,7 @@ pub async fn run(ip: SocketAddr, log_dir: PathBuf, mc_hosts: Vec<String>) -> std
             .service(api_files)
             .service(api_mc)
             .service(api_hw)
-            .service(Files::new("/api/file", log_dir.clone()))
+            .service(Files::new("/api/files", log_dir.clone()))
             .service(Files::new("/static", "./static"))
     })
     .bind(ip)

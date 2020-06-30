@@ -8,6 +8,7 @@ use std::net::SocketAddr;
 use std::path::PathBuf;
 use std::thread;
 use std::time::Duration;
+use std::sync::{Arc, RwLock};
 
 use chrono::{Local, Timelike};
 use structopt::StructOpt;
@@ -64,5 +65,19 @@ async fn main() -> std::io::Result<()> {
             ping_request::ping_request(&ping_host, &log_dir);
         });
     };
-    server::run(opt.web_host, opt.logs, opt.mc_hosts).await
+    let mc_state = Arc::new(RwLock::new(Vec::new()));
+    if !opt.mc_hosts.is_empty() {
+        // Server status thread
+        let interval = opt.interval;
+        let mc_hosts = opt.mc_hosts.clone();
+        let mc_state = mc_state.clone();
+
+        thread::spawn(move || loop {
+            mc::Status::refresh(&mc_state, &mc_hosts);
+
+            let current_seconds = Local::now().second();
+            thread::sleep(Duration::from_secs((interval - current_seconds) as u64));
+        });
+    };
+    server::run(opt.web_host, opt.logs, mc_state).await
 }
