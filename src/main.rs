@@ -1,7 +1,7 @@
 //! # Ping Log
 //! Simple RESTful webserver for logging and visualizing access times to a specified
 //! host.
-//! It is designed for a raspberry pi or other unix based IoT device running
+//! It is designed for a raspberry pi or other linux based IoT device running
 //! permanently inside the network.
 
 use std::net::SocketAddr;
@@ -65,6 +65,7 @@ async fn main() -> std::io::Result<()> {
             ping_request::ping_request(&ping_host, &log_dir);
         });
     };
+
     let mc_state = Arc::new(RwLock::new(Vec::new()));
     if !opt.mc_hosts.is_empty() {
         // Server status thread
@@ -79,5 +80,6 @@ async fn main() -> std::io::Result<()> {
             thread::sleep(Duration::from_secs((interval - current_seconds) as u64));
         });
     };
+
     server::run(opt.web_host, opt.logs, mc_state).await
 }

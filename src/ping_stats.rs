@@ -6,7 +6,7 @@ use std::io::{BufRead, BufReader};
 
 use std::path::Path;
 
-pub fn is_log_file(name: &str) -> bool {
+fn is_log_file(name: &str) -> bool {
     name.len() == 10 && name.ends_with(".txt") && name[0..6].chars().all(char::is_numeric)
 }
 
