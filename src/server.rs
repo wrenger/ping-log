@@ -3,7 +3,7 @@ use std::path::PathBuf;
 use std::sync::{Arc, RwLock};
 
 use actix_files::{Files, NamedFile};
-use actix_web::{web, App, HttpResponse, HttpServer, Result};
+use actix_web::{web, App, HttpResponse, HttpServer, Result, middleware};
 use serde::Deserialize;
 
 use super::hw;
@@ -82,6 +82,7 @@ pub async fn run(ip: SocketAddr, log_dir: PathBuf, mc_hosts: Arc<RwLock<Vec<mc::
 
     HttpServer::new(move || {
         App::new()
+            .wrap(middleware::Compress::default())
             .data(State {
                 log_dir: log_dir.clone(),
                 mc_hosts: mc_hosts.clone(),

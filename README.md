@@ -35,3 +35,13 @@ cargo run -- <args>
 | -l,--logs LOGS           | Directory for the log files        |
 | -w,--web-host WEB_HOST   | Host ip for the webserver          |
 | -r,--web-root WEB_ROOT   | Web server root directory          |
+
+------
+
+## TODO
+
+[x] Gzip compression
+[ ] Bundle static content into single `html`
+    [ ] `build.rs` reading `index.html` & generating new one with all resources included
+    [ ] This includes: css, images, js (minify?)
+[ ] Include bundled html directly in server binary
