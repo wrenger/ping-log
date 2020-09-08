@@ -144,14 +144,15 @@
         let labels = [];
         let data = [];
         let lost = [];
+        log.reverse();
         log.forEach(element => {
-            labels.unshift(new Date(element.time * 1000));
+            labels.push(new Date(element.time * 1000));
             if (element.ping < 1000) {
-                data.unshift(element.ping);
-                lost.unshift(0);
+                data.push(element.ping);
+                lost.push(0);
             } else {
-                data.unshift(0);
-                lost.unshift(1);
+                data.push(0);
+                lost.push(1);
             }
         });
         RECENT_CHART.data.labels = labels;
@@ -185,13 +186,13 @@
         let dataMin = [];
         let dataMax = [];
         let dataLost = [];
+        history.reverse();
         history.forEach(element => {
-            labels.unshift(new Date(element.time * 1000));
-            dataAvg.unshift(element.avg);
-            dataMin.unshift(element.min);
-            dataMax.unshift(element.max);
-            dataLost.unshift(element.lost);
-
+            labels.push(new Date(element.time * 1000));
+            dataAvg.push(element.avg);
+            dataMin.push(element.min);
+            dataMax.push(element.max);
+            dataLost.push(element.lost);
         });
         DAILY_CHART.data.labels = labels;
         DAILY_CHART.data.datasets = [{

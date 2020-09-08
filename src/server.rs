@@ -2,14 +2,18 @@ use std::net::SocketAddr;
 use std::path::PathBuf;
 use std::sync::{Arc, RwLock};
 
-use actix_files::{Files, NamedFile};
-use actix_web::{web, App, HttpResponse, HttpServer, Result, middleware};
+use actix_files::Files;
+use actix_web::{middleware, web, App, HttpResponse, HttpServer};
 use serde::Deserialize;
 
 use super::hw;
 use super::mc;
 use super::ping::History;
 use super::ping_stats;
+
+static HTML: &str = include_str!(concat!(env!("OUT_DIR"), "/index.html"));
+static STYLE: &str = include_str!(concat!(env!("OUT_DIR"), "/style.css"));
+static SCRIPT: &str = include_str!(concat!(env!("OUT_DIR"), "/app.js"));
 
 struct State {
     log_dir: PathBuf,
@@ -25,8 +29,20 @@ struct TimeQuery {
 }
 
 #[actix_web::get("/")]
-async fn index() -> Result<NamedFile> {
-    Ok(NamedFile::open("static/index.html")?)
+async fn index() -> HttpResponse {
+    HttpResponse::Ok().content_type("text/html").body(HTML)
+}
+
+#[actix_web::get("/static/style.css")]
+async fn style() -> HttpResponse {
+    HttpResponse::Ok().content_type("text/css").body(STYLE)
+}
+
+#[actix_web::get("/static/app.js")]
+async fn script() -> HttpResponse {
+    HttpResponse::Ok()
+        .content_type("application/javascript")
+        .body(SCRIPT)
 }
 
 #[actix_web::get("/robots.txt")]
@@ -68,7 +84,7 @@ async fn api_files(state: web::Data<State>) -> HttpResponse {
 #[actix_web::get("/api/mc")]
 async fn api_mc(state: web::Data<State>) -> HttpResponse {
     let mc_state = state.mc_hosts.read().unwrap();
-    HttpResponse::Ok().json( &*mc_state )
+    HttpResponse::Ok().json(&*mc_state)
 }
 
 #[actix_web::get("/api/hw")]
@@ -77,7 +93,11 @@ async fn api_hw() -> HttpResponse {
 }
 
 /// Starts the ping log webserver on the given `ip`
-pub async fn run(ip: SocketAddr, log_dir: PathBuf, mc_hosts: Arc<RwLock<Vec<mc::Status>>>) -> std::io::Result<()> {
+pub async fn run(
+    ip: SocketAddr,
+    log_dir: PathBuf,
+    mc_hosts: Arc<RwLock<Vec<mc::Status>>>,
+) -> std::io::Result<()> {
     println!("Server is running on {}", ip);
 
     HttpServer::new(move || {
@@ -88,6 +108,8 @@ pub async fn run(ip: SocketAddr, log_dir: PathBuf, mc_hosts: Arc<RwLock<Vec<mc::
                 mc_hosts: mc_hosts.clone(),
             })
             .service(index)
+            .service(style)
+            .service(script)
             .service(robots)
             .service(api_pings)
             .service(api_history)
@@ -95,7 +117,6 @@ pub async fn run(ip: SocketAddr, log_dir: PathBuf, mc_hosts: Arc<RwLock<Vec<mc::
             .service(api_mc)
             .service(api_hw)
             .service(Files::new("/api/files", log_dir.clone()))
-            .service(Files::new("/static", "./static"))
     })
     .bind(ip)
     .expect("Could not configure server")

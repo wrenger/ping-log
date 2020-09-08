@@ -6,7 +6,7 @@ It is designed for a raspberry pi or other unix based IoT device running
 permanently inside the network.
 
 It is build using [Rust](https://www.rust-lang.org/) and the
-[hyper](https://github.com/hyperium/hyper) framework.
+[actix](https://actix.rs/) framework.
 
 ## Setup
 
@@ -18,9 +18,11 @@ First [Rust](https://www.rust-lang.org/learn/get-started) has to be installed.
 cargo run
 ```
 
-> Cross-compiling is especially easy using [cross](https://github.com/rust-embedded/cross)
+> Cross-compiling can be done with [cross](https://github.com/rust-embedded/cross)
 >
-> E.g. for the raspberry pi: `cross build --target armv7-unknown-linux-gnueabihf`
+> E.g. for the raspberry pi:
+> 32bit: `cross build --target armv7-unknown-linux-gnueabihf`
+> 64bit: `cross build --target aarch64-unknown-linux-gnu`
 
 **Optional arguments:**
 ```bash
@@ -41,7 +43,4 @@ cargo run -- <args>
 ## TODO
 
 [x] Gzip compression
-[ ] Bundle static content into single `html`
-    [ ] `build.rs` reading `index.html` & generating new one with all resources included
-    [ ] This includes: css, images, js (minify?)
-[ ] Include bundled html directly in server binary
+[x] Include bundled html directly in server binary
