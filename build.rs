@@ -6,37 +6,33 @@ mod css {
     use std::fs;
     use std::path::{Path, PathBuf};
 
-    const CSS_DIR: &str = "static/css";
-    const CSS_MAIN: &str = "style.css";
-    const CSS_OUT: &str = "style.css";
-
-    fn get_path(file: &str) -> PathBuf {
+    fn get_path(file: &str, dir: &str) -> PathBuf {
         let file = Path::new(file);
         if file.is_absolute() {
             file.strip_prefix("/").unwrap().to_path_buf()
         } else {
-            PathBuf::from(CSS_DIR).join(file)
+            PathBuf::from(dir).join(file)
         }
     }
 
-    fn inline_imports(input: &str) -> String {
+    fn inline_imports(input: &str, dir: &str) -> String {
         let import = Regex::new("@import\\s*\"(.+)\"\\s*;").unwrap();
         import
             .replace_all(input, |caps: &Captures| {
-                let file = get_path(&caps[1]);
+                let file = get_path(&caps[1], dir);
                 println!("cargo:rerun-if-changed={:?}", file);
                 let content = fs::read_to_string(file).unwrap();
-                inline_imports(&content)
+                inline_imports(&content, dir)
             })
             .into_owned()
     }
 
-    fn inline_images(input: &str) -> String {
+    fn inline_images(input: &str, dir: &str) -> String {
         // TODO: add support for different formats
         let image_svg = Regex::new("url\\((.+\\.svg)\\)").unwrap();
         image_svg
             .replace_all(input, |caps: &Captures| {
-                let file = get_path(&caps[1]);
+                let file = get_path(&caps[1], dir);
                 let content = fs::read_to_string(file).unwrap();
                 let content = base64::encode(content.trim());
                 format!("url(\"data:image/svg+xml;base64,{}\")", content)
@@ -44,19 +40,19 @@ mod css {
             .into_owned()
     }
 
-    fn inline(input: &str) -> String {
-        let result = inline_imports(input);
-        let result = inline_images(&result);
+    fn inline(input: &str, dir: &str) -> String {
+        let result = inline_imports(input, dir);
+        let result = inline_images(&result, dir);
         result
     }
 
-    pub fn build(outdir: &Path) {
-        let file: PathBuf = [CSS_DIR, CSS_MAIN].iter().collect();
+    pub fn build(mainfile: &str, dir: &str, outdir: &Path) {
+        let file: PathBuf = [dir, mainfile].iter().collect();
         println!("cargo:rerun-if-changed={:?}", &file);
 
         let input = fs::read_to_string(file).unwrap();
-        let result = inline(&input);
-        fs::write(outdir.join(CSS_OUT), &result).unwrap();
+        let result = inline(&input, dir);
+        fs::write(outdir.join(mainfile), &result).unwrap();
     }
 }
 
@@ -65,46 +61,44 @@ mod js {
     use std::io::Read;
     use std::path::Path;
 
-    const JS_FILES: [&str; 3] = [
-        "static/js/moment.min.js",
-        "static/js/Chart.min.js",
-        "static/js/ping-web.js",
-    ];
-
-    const JS_OUT: &str = "app.js";
-
-    pub fn build(outdir: &Path) {
-        let mut bundle = String::new();
-        for path in &JS_FILES {
-            println!("cargo:rerun-if-changed={}", path);
-
-            bundle += &format!("\n// {}:\n", path);
-            let mut file = fs::File::open(path).unwrap();
-            file.read_to_string(&mut bundle).unwrap();
-        }
-        fs::write(outdir.join(JS_OUT), &bundle).unwrap();
+    pub struct Target {
+        pub input: Vec<String>,
+        pub output: String,
     }
-}
 
-mod html {
-    use std::fs;
-    use std::path::Path;
+    pub fn build(outdir: &Path, targets: &[Target]) {
+        for target in targets {
+            let mut bundle = String::new();
+            for path in &target.input {
+                println!("cargo:rerun-if-changed={}", path);
 
-    const HTML_FILE: &str = "static/index.html";
-    const HTML_OUT: &str = "index.html";
-
-    pub fn build(outdir: &Path) {
-        println!("cargo:rerun-if-changed={}", HTML_FILE);
-
-        let content = fs::read_to_string(HTML_FILE).unwrap();
-        fs::write(outdir.join(HTML_OUT), &content).unwrap();
+                bundle += &format!("\n// {}:\n", path);
+                let mut file = fs::File::open(path).unwrap();
+                file.read_to_string(&mut bundle).unwrap();
+            }
+            fs::write(outdir.join(&target.output), &bundle).unwrap();
+        }
     }
 }
 
 fn main() {
     let outdir = PathBuf::from(&env::var("OUT_DIR").unwrap());
 
-    css::build(&outdir);
-    js::build(&outdir);
-    html::build(&outdir);
+    css::build("style.css", "static/css", &outdir);
+
+    let targets = vec![
+        js::Target {
+            input: vec![
+                "static/js/moment.min.js".into(),
+                "static/js/Chart.min.js".into(),
+                "static/js/ping.js".into(),
+            ],
+            output: "ping.js".into(),
+        },
+        js::Target {
+            input: vec!["static/js/drop.js".into()],
+            output: "drop.js".into(),
+        },
+    ];
+    js::build(&outdir, &targets);
 }

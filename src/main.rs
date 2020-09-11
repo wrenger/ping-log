@@ -6,13 +6,14 @@
 
 use std::net::SocketAddr;
 use std::path::PathBuf;
+use std::sync::{Arc, RwLock};
 use std::thread;
 use std::time::Duration;
-use std::sync::{Arc, RwLock};
 
 use chrono::{Local, Timelike};
 use structopt::StructOpt;
 
+mod drops;
 mod hw;
 mod mc;
 mod ping;
@@ -46,6 +47,14 @@ struct Opt {
     /// Address and port of this webserver
     #[structopt(short, long)]
     mc_hosts: Vec<String>,
+
+    /// Filepath to the drop directory
+    #[structopt(long, parse(from_os_str))]
+    drop_dir: Option<PathBuf>,
+
+    /// Address and port of the drop server
+    #[structopt(long, default_value = "127.0.0.1:8082")]
+    drop_host: SocketAddr,
 }
 
 #[actix_rt::main]
@@ -80,6 +89,14 @@ async fn main() -> std::io::Result<()> {
             thread::sleep(Duration::from_secs((interval - current_seconds) as u64));
         });
     };
+    let main_server = server::run(opt.web_host, opt.logs, mc_state, opt.drop_dir.clone());
 
-    server::run(opt.web_host, opt.logs, mc_state).await
+    if let Some(drop_dir) = opt.drop_dir {
+        let drop_server = drops::run(opt.drop_host, drop_dir);
+        // Run both at the same time
+        let (first, second) = futures::join!(main_server, drop_server);
+        first.or(second)
+    } else {
+        main_server.await
+    }
 }

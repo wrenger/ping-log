@@ -20,7 +20,11 @@ structopt = "0.3"
 actix-web = "2.0"
 actix-files = "0.2"
 actix-rt = "1.1"
+actix-multipart = "0.2"
 num_cpus = "1.13"
+futures = "0.3"
+sha1 = "0.6"
+sanitize-filename = "0.2"
 
 [build-dependencies]
 regex = "1.3"

@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Drop</title>
+    <link rel="stylesheet" href="static/style.css">
+</head>
+
+<body>
+    <div class="box">
+        <h1>File Upload</h1>
+        <form target="/" method="post" enctype="multipart/form-data">
+            <p class="row">
+                <input class="stretch" type="file" name="drop-file" id="drop-file">
+            </p>
+        </form>
+        <p id="drop-status"></p>
+    </div>
+
+    <div class="box">
+        <h1>Uploaded Files</h1>
+        <table>
+            <thead>
+                <tr>
+                    <th>Filename</th>
+                    <th>URL</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody id="drops"></tbody>
+        </table>
+    </div>
+
+    <script src="static/drop.js"></script>
+</body>
+
+</html>

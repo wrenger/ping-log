@@ -1,6 +1,7 @@
 .vscode/
 # temp
 /log/
+/drop/
 # Rust
 Cargo.lock
 .cargo
