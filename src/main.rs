@@ -95,7 +95,7 @@ async fn main() -> std::io::Result<()> {
         let drop_server = drops::run(opt.drop_host, drop_dir);
         // Run both at the same time
         let (first, second) = futures::join!(main_server, drop_server);
-        first.or(second)
+        first.and(second)
     } else {
         main_server.await
     }

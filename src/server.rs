@@ -102,14 +102,11 @@ async fn drop(
     state: web::Data<State>,
 ) -> Result<HttpResponse, Error> {
     if let Some(drop_dir) = &state.drop_dir {
-        let filename: PathBuf = [
-            sanitize_filename::sanitize(&path.0),
-            sanitize_filename::sanitize(&path.1),
-        ]
-        .iter()
-        .collect();
-        println!("Download {:?}", filename);
-        let filepath = drop_dir.join(filename);
+        let (hash, file) = path.as_ref();
+        let filepath = drop_dir
+            .join(sanitize_filename::sanitize(hash))
+            .join(sanitize_filename::sanitize(file));
+        println!("Download {:?}", filepath);
         if filepath.exists() {
             NamedFile::open(filepath)?.into_response(&req)
         } else {
@@ -127,7 +124,7 @@ pub async fn run(
     mc_hosts: Arc<RwLock<Vec<mc::Status>>>,
     drop_dir: Option<PathBuf>,
 ) -> std::io::Result<()> {
-    println!("Server is running on {}", ip);
+    println!("Ping server is running on {}", ip);
 
     HttpServer::new(move || {
         let mut app = App::new()

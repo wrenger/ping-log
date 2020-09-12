@@ -139,14 +139,12 @@ async fn remove(
     path: web::Path<(String, String)>,
     state: web::Data<State>,
 ) -> Result<HttpResponse, Error> {
-    let filename: PathBuf = [
-        sanitize_filename::sanitize(&path.0),
-        sanitize_filename::sanitize(&path.1),
-    ]
-    .iter()
-    .collect();
-    println!("Remove {:?}", filename);
-    let path = state.drop_dir.join(filename);
+    let (hash, file) = path.as_ref();
+    let path = state
+        .drop_dir
+        .join(sanitize_filename::sanitize(hash))
+        .join(sanitize_filename::sanitize(file));
+    println!("Download {:?}", path);
     if path.exists() {
         web::block(move || fs::remove_dir_all(path.parent().unwrap())).await?;
         Ok(HttpResponse::Ok().into())
@@ -157,7 +155,7 @@ async fn remove(
 
 /// Starts the drop webserver on the given `ip`
 pub async fn run(ip: SocketAddr, drop_dir: PathBuf) -> std::io::Result<()> {
-    println!("Drop Server is running on {}", ip);
+    println!("Drop server is running on {}", ip);
 
     HttpServer::new(move || {
         App::new()
