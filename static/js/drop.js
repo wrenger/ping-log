@@ -9,12 +9,8 @@
     const STATUS_LABEL = document.getElementById("drop-status");
     const DROP_TABLE = document.getElementById("drops");
 
-    function getJSON(url, callback) {
-        fetch(url)
-            .then(response => { if (!response.ok) throw Error(response.statusText); return response })
-            .then(response => response.json())
-            .then(callback)
-            .catch(error => console.log("request error:", error));
+    function parseJson(response) {
+        return response.ok ? response.json() : Promise.reject(new Error(response.statusText));
     }
 
     function uploadFile(event) {
@@ -28,24 +24,26 @@
             method: "POST",
             body: formData,
         })
-            .then(response => { if (!response.ok) throw Error(response.statusText); return response })
-            .then(response => response.json())
-            .then(data => displayUrl(data))
+            .then(parseJson)
+            .then(displayUrl)
             .catch(error => STATUS_LABEL.textContent = "Error: " + error)
     }
 
     function displayUrl(url) {
         STATUS_LABEL.textContent = "Finish: URL: " + url;
-        getJSON(LIST_URL, updateDrops);
+        fetch(LIST_URL)
+            .then(parseJson)
+            .then(updateDrops)
+            .catch(console.error);
     }
 
     function removeDrop(row_node, url) {
         fetch(REMOVE_URL + url, {
             method: "DELETE"
         })
-            .then(response => { if (!response.ok) throw Error(response.statusText); return response })
+            .then(response.ok ? response : Promise.reject(new Error(response.statusText)))
             .then(_ => DROP_TABLE.removeChild(row_node))
-            .catch(error => console.log("request error:", error))
+            .catch(console.error)
     }
 
     function updateDrops(data) {
@@ -72,21 +70,13 @@
         }
     }
 
-    function init() {
-        FILE_INPUT.addEventListener("change", uploadFile);
-        getJSON(LIST_URL, updateDrops);
-    }
+    // -- Init --
 
-    function ready(fn) {
-        if (document.attachEvent ?
-            document.readyState === "complete" :
-            document.readyState !== "loading") {
-            fn();
-        } else {
-            document.addEventListener('DOMContentLoaded', fn);
-        }
-    }
+    FILE_INPUT.addEventListener("change", uploadFile);
 
-    ready(init);
+    fetch(LIST_URL)
+        .then(parseJson)
+        .then(updateDrops)
+        .catch(console.error);
 
 })();

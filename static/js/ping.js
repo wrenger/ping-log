@@ -80,51 +80,12 @@
     const DAY_SELECT = document.getElementById('select-day');
     const RELOAD_BTN = document.getElementById("reload");
 
-    function getJSON(url, callback, err_callback = null) {
-        var request = new XMLHttpRequest();
-        request.onload = (e) => {
-            if (e.target.status === 200) {
-                callback(JSON.parse(e.target.responseText));
-            } else if (err_callback != null) {
-                err_callback(e);
-            } else {
-                console.error("request error:", e.target.status, e.target.responseURL);
-            }
-        };
-        if (err_callback != null) {
-            request.onerror = err_callback;
-        } else {
-            request.onerror = e => console.error("request error:", e.target.status, e.target.responseURL);
-        }
-        request.open("GET", url, true);
-        request.send();
+    function pURL(url, data) {
+        return encodeURI(url + "?" + new URLSearchParams(data).toString())
     }
 
-    function param(values) {
-        values = Object.keys(values).map(key => {
-            return encodeURIComponent(key) + "=" + encodeURIComponent(values[key]);
-        });
-        return values.join("&");
-    }
-
-    function getLog(callback, start = null, end = null, offset = 0, count = 60) {
-        let params = {
-            count: count,
-        };
-        if (start) params.start = start;
-        if (end) params.end = end;
-        if (offset > 0) params.offset = offset;
-        getJSON(encodeURI(API_LOG + "?" + param(params)), callback);
-    }
-
-    function getHistory(callback, start = null, end = null, offset = 0, count = 24) {
-        let params = {
-            count: count,
-        };
-        if (start) params.start = start;
-        if (end) params.end = end;
-        if (offset > 0) params.offset = offset;
-        getJSON(encodeURI(API_HISTORY + "?" + param(params)), callback);
+    function parseJson(response) {
+        return response.ok ? response.json() : Promise.reject(new Error(response.statusText));
     }
 
     function updateStats(stats) {
@@ -229,10 +190,6 @@
         });
     }
 
-    function getHw(callback) {
-        getJSON(encodeURI(API_HW), callback, _ => callback([]));
-    }
-
     function updateHw(status) {
         if (status instanceof Object) {
             document.getElementById("hw-load").textContent = ((status["load"] || 0) * 100).toFixed(2);
@@ -240,10 +197,6 @@
             document.getElementById("hw-mem-used").textContent = (status["memory_used"] || 0).toFixed(2);
             document.getElementById("hw-mem-total").textContent = (status["memory_total"] || 0).toFixed(2);
         }
-    }
-
-    function getMc(callback) {
-        getJSON(encodeURI(API_MC), callback, _ => callback([]));
     }
 
     function updateMc(stats) {
@@ -269,48 +222,53 @@
     }
 
     function update() {
-        const now = Math.round(Date.now() / 1000);
-        const hour = Math.round(moment().subtract(1, 'hour') / 1000);
-        getLog((data) => {
-            if (data instanceof Array) {
-                updateStats(data[0]);
-                updateRecentChart(data[1]);
-            }
-        }, now, hour);
-        getMc(updateMc);
-        getHw(updateHw);
+        fetch(pURL(API_LOG, {
+            start: Math.round(Date.now() / 1000),
+            end: Math.round(moment().subtract(1, 'hour') / 1000),
+            count: 60,
+        }))
+            .then(parseJson)
+            .then((data) => {
+                if (data instanceof Array) {
+                    updateStats(data[0]);
+                    updateRecentChart(data[1]);
+                }
+            })
+            .catch(console.error);
+
+        fetch(API_MC)
+            .then(parseJson)
+            .then(updateMc)
+            .catch(_ => updateMc([]));
+        fetch(API_HW)
+            .then(parseJson)
+            .then(updateHw)
+            .catch(_ => updateHw([]));
 
         let day = moment().subtract(DAY_SELECT.value, "day");
-        const dayStart = Math.round(day.startOf("day").valueOf() / 1000);
-        const dayEnd = Math.round(day.endOf("day").valueOf() / 1000);
-        getHistory(updateDailyChart, dayEnd, dayStart);
+        fetch(pURL(API_HISTORY, {
+            start: Math.round(day.startOf("day").valueOf() / 1000),
+            end: Math.round(day.endOf("day").valueOf() / 1000),
+            count: 24,
+        }))
+            .then(parseJson)
+            .then(updateDailyChart)
+            .catch(console.error);
     }
 
-    function init() {
-        RELOAD_BTN.addEventListener("click", update);
+    // -- Init --
 
-        for (var i = 0; i <= 7; ++i) {
-            var option = document.createElement("option");
-            option.text = moment().subtract(i, "day").format("dd DD.MM.YYYY");
-            option.value = i;
-            DAY_SELECT.options.add(option)
-        }
+    RELOAD_BTN.addEventListener("click", update);
 
-        DAY_SELECT.addEventListener("change", update);
-
-        update();
-        setInterval(update, 30000);
+    for (var i = 0; i <= 7; ++i) {
+        var option = document.createElement("option");
+        option.text = moment().subtract(i, "day").format("dd DD.MM.YYYY");
+        option.value = i;
+        DAY_SELECT.options.add(option)
     }
 
-    function ready(fn) {
-        if (document.attachEvent ?
-            document.readyState === "complete" :
-            document.readyState !== "loading") {
-            fn();
-        } else {
-            document.addEventListener('DOMContentLoaded', fn);
-        }
-    }
+    DAY_SELECT.addEventListener("change", update);
 
-    ready(init);
+    update();
+    setInterval(update, 30000);
 })();
