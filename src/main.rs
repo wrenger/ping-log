@@ -57,7 +57,7 @@ struct Opt {
     drop_host: SocketAddr,
 }
 
-#[actix_rt::main]
+#[actix_web::main]
 async fn main() -> std::io::Result<()> {
     let opt = Opt::from_args();
 
