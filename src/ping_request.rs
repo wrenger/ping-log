@@ -8,6 +8,13 @@ use chrono::{Duration, Local};
 
 use super::ping::Ping;
 
+#[cfg(not(target_os = "macos"))]
+const WAIT_ARG: &str = "-w 1";
+#[cfg(target_os = "macos")]
+const WAIT_ARG: &str = "-W 1";
+
+const COUNT_ARG: &str = "-c 1";
+
 /// Performs an ping request and stores the result in the log file
 pub fn ping_request(host: &str, log_dir: &Path) {
     let log = perform_request(host);
@@ -19,7 +26,7 @@ pub fn ping_request(host: &str, log_dir: &Path) {
 fn perform_request(host: &str) -> Ping {
     let time = Local::now().timestamp();
     let output = Command::new("ping")
-        .args(&["-c 1", "-w 1", &host])
+        .args(&[COUNT_ARG, WAIT_ARG, &host])
         .output()
         .expect("failed to execute bash 'ping' command");
 
@@ -50,6 +57,10 @@ fn parse_output(output: String) -> f64 {
 }
 
 fn write_request(dir: &Path, filename: &Path, log: Ping) -> Result<()> {
+    if !dir.exists() {
+        std::fs::create_dir_all(dir).expect("Error creating log dir");
+    }
+
     let path = dir.join(filename);
 
     if !path.exists() {
