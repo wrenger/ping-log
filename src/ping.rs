@@ -1,10 +1,10 @@
-use std::convert::TryFrom;
 use std::f64::NAN;
+use std::fmt;
 
 use serde::Serialize;
 
 /// Ping data (timestamp and duration in ms)
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, PartialEq, Serialize)]
 pub struct Ping {
     pub time: i64,
     pub ping: f64,
@@ -16,19 +16,15 @@ impl Ping {
     }
 }
 
-impl TryFrom<String> for Ping {
-    type Error = ();
+impl From<(i64, f64)> for Ping {
+    fn from(t: (i64, f64)) -> Self {
+        Ping::new(t.0, t.1)
+    }
+}
 
-    fn try_from(val: String) -> Result<Ping, ()> {
-        if let Some(idx) = val.find(' ') {
-            let (time, ping) = val.split_at(idx);
-            if let Ok(time) = time.parse::<i64>() {
-                if let Ok(ping) = ping[1..].parse::<f64>() {
-                    return Ok(Ping::new(time, ping));
-                }
-            }
-        }
-        Err(())
+impl fmt::Display for Ping {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{} {:.1}", self.time, self.ping)
     }
 }
 

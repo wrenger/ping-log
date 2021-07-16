@@ -1,9 +1,6 @@
 use super::ping::{History, Ping};
 
-use std::convert::TryFrom;
-use std::fs::{read_dir, File};
-use std::io::{BufRead, BufReader};
-
+use std::fs::{self, read_dir};
 use std::path::Path;
 
 fn is_log_file(name: &str) -> bool {
@@ -47,23 +44,35 @@ fn read_log_all(log_dir: &Path) -> impl Iterator<Item = Ping> {
     files.reverse();
     files
         .into_iter()
-        .flat_map(move |file| read_log_file(log_dir_buf.to_owned(), file).into_iter())
+        .flat_map(move |file| read_log_file(&log_dir_buf, Path::new(&file)).into_iter())
 }
 
 /// Parses the logfile and returns the pings
-fn read_log_file<P: AsRef<Path>, F: AsRef<Path>>(log_dir: P, file: F) -> Vec<Ping> {
-    let filename = log_dir.as_ref().join(file);
-    if let Ok(file) = File::open(&filename) {
-        let mut pings: Vec<Ping> = BufReader::new(file)
-            .lines()
-            .filter_map(|line| line.ok().and_then(|line| Ping::try_from(line).ok()))
-            .collect();
-        pings.reverse();
-        pings
+fn read_log_file(log_dir: &Path, file: &Path) -> Vec<Ping> {
+    let filename = log_dir.join(file);
+    if let Ok(input) = fs::read_to_string(&filename) {
+        parse(&input)
     } else {
-        eprintln!("Error opening file {:?}\n", filename);
-        vec![]
+        eprintln!("Error opening file {:?}\n", &filename);
+        Vec::new()
     }
+}
+
+fn parse(input: &str) -> Vec<Ping> {
+    use nom::character::complete::{digit1, newline, space1};
+    use nom::combinator::map_res;
+    use nom::multi::many0;
+    use nom::number::complete::double;
+    use nom::sequence::{separated_pair, terminated};
+    use nom::{IResult, Parser};
+
+    fn int64(input: &str) -> IResult<&str, i64, ()> {
+        map_res(digit1, |s: &str| s.parse())(input)
+    }
+
+    many0(terminated(separated_pair(int64, space1, double), newline).map(Ping::from))(&input)
+        .map(|(_, o)| o)
+        .unwrap_or(Vec::new())
 }
 
 /// Returns the accumulated pings per hour for the given period
@@ -110,6 +119,18 @@ mod test {
     use super::*;
 
     use std::f64::NAN;
+
+    #[test]
+    fn test_parse() {
+        assert_eq!(
+            parse("1626457680 11.5\n1626457740 1000.0\n1626462480 13.9\n"),
+            vec![
+                Ping::new(1626457680, 11.5),
+                Ping::new(1626457740, 1000.0),
+                Ping::new(1626462480, 13.9),
+            ]
+        );
+    }
 
     #[test]
     fn test_generate_history() {

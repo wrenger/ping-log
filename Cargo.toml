@@ -19,6 +19,7 @@ chrono = "0.4"
 num_cpus = "1.13"
 serde = "1.0"
 structopt = "0.3"
+nom = "6.2.1"
 
 [build-dependencies]
 base64 = "0.13"

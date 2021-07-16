@@ -3,8 +3,9 @@ use std::fs::{read_dir, remove_file};
 use std::io::{Result, Write};
 use std::path::Path;
 use std::process::Command;
+use std::thread;
 
-use chrono::{Duration, Local};
+use chrono::{Duration, Local, Timelike};
 
 use super::ping::Ping;
 
@@ -15,12 +16,16 @@ const WAIT_ARG: &str = "-W 1";
 
 const COUNT_ARG: &str = "-c 1";
 
-/// Performs an ping request and stores the result in the log file
-pub fn ping_request(host: &str, log_dir: &Path) {
-    let log = perform_request(host);
-    let file_name = Local::today().format("%y%m%d.txt").to_string();
+pub fn monitor(host: &str, interval: u32, log_dir: &Path) {
+    loop {
+        let current_seconds = Local::now().second();
+        thread::sleep(std::time::Duration::from_secs(
+            (interval - current_seconds % interval) as u64,
+        ));
 
-    write_request(log_dir, Path::new(&file_name), log).expect("write log error");
+        let log = perform_request(host);
+        write_request(log_dir, log).expect("write log error");
+    }
 }
 
 fn perform_request(host: &str) -> Ping {
@@ -39,26 +44,62 @@ fn perform_request(host: &str) -> Ping {
 
     Ping::new(
         time,
-        String::from_utf8(output.stdout).map_or(1000.0, |o| parse_output(&o)),
+        String::from_utf8(output.stdout).map_or(1000.0, |o| parse(&o)),
     )
 }
 
-fn parse_output(output: &str) -> f64 {
-    if let Some(line) = output.splitn(3, '\n').nth(1) {
-        if let Some(start) = line.rfind('=') {
-            if let Some(end) = line.rfind(' ') {
-                return line[start + 1..end].parse().unwrap_or(1000.0);
-            }
+fn parse(input: &str) -> f64 {
+    use nom::bytes::complete::{tag, take_while};
+    use nom::character::complete::char as nchar;
+    use nom::character::complete::{digit1, line_ending};
+    use nom::combinator::{opt, recognize};
+    use nom::number::complete::double;
+    use nom::sequence::{delimited, pair, preceded, tuple};
+
+    type Result<'a, T> = nom::IResult<&'a str, T, ()>;
+
+    fn skip_line(input: &str) -> Result<&str> {
+        if let Some((output, input)) = input.split_once('\n') {
+            Ok((input, output))
+        } else {
+            Err(nom::Err::Error(()))
         }
     }
-    1000.0
+    fn addr(input: &str) -> Result<&str> {
+        recognize(take_while(|c: char| {
+            c.is_alphanumeric() || c == '.' || c == ':' || c == '-' || c == '_'
+        }))(input)
+    }
+    fn host(input: &str) -> Result<&str> {
+        recognize(pair(addr, opt(delimited(tag(" ("), addr, nchar(')')))))(input)
+    }
+    fn response(input: &str) -> Result<f64> {
+        delimited(
+            tuple((
+                tag("64 bytes from "),
+                host,
+                opt(nchar(':')),
+                nchar(' '),
+                delimited(tag("icmp_seq="), digit1, nchar(' ')),
+                delimited(tag("ttl="), digit1, nchar(' ')),
+            )),
+            delimited(tag("time="), double, tag(" ms")),
+            line_ending,
+        )(input)
+    }
+
+    match preceded(skip_line, response)(input) {
+        Ok((_, o)) => o,
+        _ => 1000.0,
+    }
 }
 
-fn write_request(dir: &Path, filename: &Path, log: Ping) -> Result<()> {
+fn write_request(dir: &Path, log: Ping) -> Result<()> {
     if !dir.exists() {
         std::fs::create_dir_all(dir).expect("Error creating log dir");
     }
 
+    let filename = Local::today().format("%y%m%d.txt").to_string();
     let path = dir.join(filename);
 
     if !path.exists() {
@@ -70,7 +111,7 @@ fn write_request(dir: &Path, filename: &Path, log: Ping) -> Result<()> {
         .write(true)
         .append(true)
         .open(path)?;
-    file.write_fmt(format_args!("{} {}\n", log.time, log.ping))?;
+    writeln!(file, "{}", log)?;
     Ok(())
 }
 
@@ -99,21 +140,31 @@ fn older(filename: &str, oldest: &str) -> bool {
 mod test {
 
     #[test]
-    fn parse_output() {
+    fn parse() {
         use super::*;
 
         assert_eq!(
-            parse_output(
+            parse(
                 "\
 PING 1.1.1.1 (1.1.1.1) 56(84) bytes of data.
 64 bytes from 1.1.1.1: icmp_seq=1 ttl=57 time=11.3 ms
 
 --- 1.1.1.1 ping statistics ---
 1 packets transmitted, 1 received, 0% packet loss, time 0ms
-rtt min/avg/max/mdev = 11.315/11.315/11.315/0.000 ms"
+rtt min/avg/max/mdev = 11.315/11.315/11.315/0.000 ms\n"
             ),
             11.3
-        )
+        );
+        assert_eq!(
+            parse("\
+PING google.com(fra07s29-in-x200e.1e100.net (2a00:1450:4001:802::200e)) 56 data bytes
+64 bytes from fra07s29-in-x200e.1e100.net (2a00:1450:4001:802::200e): icmp_seq=1 ttl=118 time=15.9 ms
+
+--- google.com ping statistics ---
+1 packets transmitted, 1 received, 0% packet loss, time 0ms
+rtt min/avg/max/mdev = 15.877/15.877/15.877/0.000 ms\n"),
+            15.9
+        );
     }
 
     #[test]

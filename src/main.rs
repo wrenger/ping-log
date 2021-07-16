@@ -58,12 +58,7 @@ async fn main() -> std::io::Result<()> {
         let interval = opt.interval;
         let ping_host = opt.ping_host;
 
-        thread::spawn(move || loop {
-            let current_seconds = Local::now().second();
-            thread::sleep(Duration::from_secs((interval - current_seconds) as u64));
-
-            ping_request::ping_request(&ping_host, &log_dir);
-        });
+        thread::spawn(move || ping_request::monitor(&ping_host, interval, &log_dir));
     };
 
     let mc_state = Arc::new(RwLock::new(Vec::new()));
