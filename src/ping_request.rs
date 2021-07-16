@@ -39,13 +39,11 @@ fn perform_request(host: &str) -> Ping {
 
     Ping::new(
         time,
-        String::from_utf8(output.stdout)
-            .ok()
-            .map_or(1000.0, parse_output),
+        String::from_utf8(output.stdout).map_or(1000.0, |o| parse_output(&o)),
     )
 }
 
-fn parse_output(output: String) -> f64 {
+fn parse_output(output: &str) -> f64 {
     if let Some(line) = output.splitn(3, '\n').nth(1) {
         if let Some(start) = line.rfind('=') {
             if let Some(end) = line.rfind(' ') {
@@ -99,10 +97,29 @@ fn older(filename: &str, oldest: &str) -> bool {
 
 #[cfg(test)]
 mod test {
-    use super::*;
 
     #[test]
-    fn test_old_filename() {
+    fn parse_output() {
+        use super::*;
+
+        assert_eq!(
+            parse_output(
+                "\
+PING 1.1.1.1 (1.1.1.1) 56(84) bytes of data.
+64 bytes from 1.1.1.1: icmp_seq=1 ttl=57 time=11.3 ms
+
+--- 1.1.1.1 ping statistics ---
+1 packets transmitted, 1 received, 0% packet loss, time 0ms
+rtt min/avg/max/mdev = 11.315/11.315/11.315/0.000 ms"
+            ),
+            11.3
+        )
+    }
+
+    #[test]
+    fn old_filename() {
+        use super::*;
+
         assert_eq!(10, "191129.txt".len());
 
         assert!(!older("malformed", "191129"));
@@ -115,7 +132,7 @@ mod test {
     }
 
     #[test]
-    fn test_time() {
+    fn time() {
         use chrono::{Local, Utc};
         println!("Current time: {}", Local::now());
         println!("Current time: {}", Local::now().timestamp());

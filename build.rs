@@ -94,11 +94,7 @@ fn main() {
                 "static/js/ping.js".into(),
             ],
             output: "ping.js".into(),
-        },
-        js::Target {
-            input: vec!["static/js/drop.js".into()],
-            output: "drop.js".into(),
-        },
+        }
     ];
     js::build(&outdir, &targets);
 }

@@ -1,10 +1,8 @@
-use std::io;
 use std::net::SocketAddr;
 use std::path::PathBuf;
 use std::sync::{Arc, RwLock};
 
-use actix_files::{Files, NamedFile};
-use actix_web::{middleware, web, App, Error, HttpRequest, HttpResponse, HttpServer};
+use actix_web::{middleware, web, App, HttpResponse, HttpServer};
 use serde::Deserialize;
 
 use super::hw;
@@ -14,12 +12,10 @@ use super::ping_stats;
 
 static HTML: &str = include_str!(concat!(env!("CARGO_MANIFEST_DIR"), "/static/ping.html"));
 static SCRIPT: &str = include_str!(concat!(env!("OUT_DIR"), "/ping.js"));
-
-pub(crate) static STYLE: &str = include_str!(concat!(env!("OUT_DIR"), "/style.css"));
+static STYLE: &str = include_str!(concat!(env!("OUT_DIR"), "/style.css"));
 
 struct State {
     log_dir: PathBuf,
-    drop_dir: Option<PathBuf>,
     mc_hosts: Arc<RwLock<Vec<mc::Status>>>,
 }
 
@@ -79,11 +75,6 @@ async fn api_history(query: web::Query<TimeQuery>, state: web::Data<State>) -> H
     ))
 }
 
-#[actix_web::get("/api/files")]
-async fn api_files(state: web::Data<State>) -> HttpResponse {
-    HttpResponse::Ok().json(ping_stats::log_files(&state.log_dir))
-}
-
 #[actix_web::get("/api/mc")]
 async fn api_mc(state: web::Data<State>) -> HttpResponse {
     let mc_state = state.mc_hosts.read().unwrap();
@@ -95,43 +86,19 @@ async fn api_hw() -> HttpResponse {
     HttpResponse::Ok().json(hw::Status::request())
 }
 
-#[actix_web::get("/drop/{hash}/{file}")]
-async fn drop(
-    req: HttpRequest,
-    path: web::Path<(String, String)>,
-    state: web::Data<State>,
-) -> Result<HttpResponse, Error> {
-    if let Some(drop_dir) = &state.drop_dir {
-        let (hash, file) = path.as_ref();
-        let filepath = drop_dir
-            .join(sanitize_filename::sanitize(hash))
-            .join(sanitize_filename::sanitize(file));
-        println!("Download {:?}", filepath);
-        if filepath.exists() {
-            NamedFile::open(filepath)?.into_response(&req)
-        } else {
-            Err(io::Error::from(io::ErrorKind::NotFound).into())
-        }
-    } else {
-        Err(io::Error::from(io::ErrorKind::NotFound).into())
-    }
-}
-
 /// Starts the ping log webserver on the given `ip`
 pub async fn run(
     ip: SocketAddr,
     log_dir: PathBuf,
     mc_hosts: Arc<RwLock<Vec<mc::Status>>>,
-    drop_dir: Option<PathBuf>,
 ) -> std::io::Result<()> {
     println!("Ping server is running on {}", ip);
 
     HttpServer::new(move || {
-        let mut app = App::new()
+        App::new()
             .wrap(middleware::Compress::default())
             .data(State {
                 log_dir: log_dir.clone(),
-                drop_dir: drop_dir.clone(),
                 mc_hosts: mc_hosts.clone(),
             })
             .service(index)
@@ -140,14 +107,8 @@ pub async fn run(
             .service(robots)
             .service(api_pings)
             .service(api_history)
-            .service(api_files)
             .service(api_mc)
             .service(api_hw)
-            .service(Files::new("/api/files", log_dir.clone()));
-        if drop_dir.is_some() {
-            app = app.service(drop);
-        }
-        app
     })
     .bind(ip)
     .expect("Could not configure server")
