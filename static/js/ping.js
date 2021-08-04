@@ -247,8 +247,8 @@
 
         let day = moment().subtract(DAY_SELECT.value, "day");
         fetch(pURL(API_HISTORY, {
-            start: Math.round(day.startOf("day").valueOf() / 1000),
-            end: Math.round(day.endOf("day").valueOf() / 1000),
+            start: Math.round(day.endOf("day").valueOf() / 1000),
+            end: Math.round(day.startOf("day").valueOf() / 1000),
             count: 24,
         }))
             .then(parseJson)

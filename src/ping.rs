@@ -1,5 +1,6 @@
 use std::f64::NAN;
 use std::fmt;
+use std::str::FromStr;
 
 use serde::Serialize;
 
@@ -25,6 +26,18 @@ impl From<(i64, f64)> for Ping {
 impl fmt::Display for Ping {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{} {:.1}", self.time, self.ping)
+    }
+}
+
+impl FromStr for Ping {
+    type Err = ();
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let (t, p) = s.split_once(char::is_whitespace).ok_or(())?;
+        Ok(Ping {
+            time: t.parse().map_err(|_| ())?,
+            ping: p.parse().map_err(|_| ())?,
+        })
     }
 }
 

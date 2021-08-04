@@ -108,7 +108,6 @@ fn write_request(dir: &Path, log: Ping) -> Result<()> {
 
     let mut file = OpenOptions::new()
         .create(true)
-        .write(true)
         .append(true)
         .open(path)?;
     writeln!(file, "{}", log)?;

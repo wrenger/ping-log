@@ -22,6 +22,8 @@ pub fn log_files(dir: &Path) -> Vec<String> {
 }
 
 /// Parses the log files and returns the pings for the given range
+/// As the output is reversed and begins with the newest timestamp,
+/// `start` has to be larger (after) than `end`.
 pub fn read_log<P: AsRef<Path>>(
     log_dir: P,
     offset: usize,
@@ -29,6 +31,8 @@ pub fn read_log<P: AsRef<Path>>(
     start: i64,
     end: i64,
 ) -> Vec<Ping> {
+    assert!(start >= end);
+
     read_log_all(log_dir.as_ref())
         .skip_while(|ping| start != 0 && ping.time >= start)
         .skip(offset)
@@ -59,20 +63,13 @@ fn read_log_file(log_dir: &Path, file: &Path) -> Vec<Ping> {
 }
 
 fn parse(input: &str) -> Vec<Ping> {
-    use nom::character::complete::{digit1, newline, space1};
-    use nom::combinator::map_res;
-    use nom::multi::many0;
-    use nom::number::complete::double;
-    use nom::sequence::{separated_pair, terminated};
-    use nom::{IResult, Parser};
-
-    fn int64(input: &str) -> IResult<&str, i64, ()> {
-        map_res(digit1, |s: &str| s.parse())(input)
-    }
-
-    many0(terminated(separated_pair(int64, space1, double), newline).map(Ping::from))(&input)
-        .map(|(_, o)| o)
-        .unwrap_or(Vec::new())
+    let mut result = input
+        .lines()
+        .map(str::parse)
+        .collect::<Result<Vec<Ping>, ()>>()
+        .unwrap_or_default();
+    result.reverse();
+    result
 }
 
 /// Returns the accumulated pings per hour for the given period
@@ -84,7 +81,7 @@ pub fn read_history<P: AsRef<Path>>(
     end: i64,
 ) -> Vec<History> {
     let pings = read_log(log_dir, offset, count * 65, start, end);
-    generate_history(&pings[..])
+    generate_history(&pings)
 }
 
 /// Generates a list of accumulated pings per hour
@@ -123,7 +120,7 @@ mod test {
     #[test]
     fn test_parse() {
         assert_eq!(
-            parse("1626457680 11.5\n1626457740 1000.0\n1626462480 13.9\n"),
+            parse("1626457680 11.5\n1626457740 1000\n1626462480 13.9\n"),
             vec![
                 Ping::new(1626457680, 11.5),
                 Ping::new(1626457740, 1000.0),

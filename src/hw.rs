@@ -42,9 +42,10 @@ impl Status {
 fn request_load() -> f32 {
     if let Ok(load) = fs::read_to_string(LOAD_AVG_FILE) {
         load.splitn(3, ' ')
-        .nth(1)
-        .and_then(|l| l.parse::<f32>().ok())
-        .unwrap_or_default() / num_cpus::get() as f32
+            .nth(1)
+            .and_then(|l| l.parse::<f32>().ok())
+            .unwrap_or_default()
+            / num_cpus::get() as f32
     } else {
         0.0
     }
@@ -52,23 +53,26 @@ fn request_load() -> f32 {
 
 /// Returns the currently used and total memory.
 fn request_mem() -> (f32, f32) {
+    fn parse(prefix: &str, line: &str) -> Option<f32> {
+        line.strip_prefix(prefix)
+            .map(str::trim)
+            .and_then(|s| s.strip_suffix(" kB"))
+            .and_then(|s| s.parse().ok())
+    }
+
     if let Ok(load) = fs::read_to_string(MEM_INFO_FILE) {
         let mut memory_avaliable = 0.0;
         let mut memory_total = 0.0;
         for line in load.split('\n') {
-            if line.starts_with("MemTotal:") {
-                if let Some(val) = line.split_whitespace().nth(1) {
-                    memory_total = val.parse::<f32>().unwrap_or_default() / (1024.0 * 1024.0);
-                    if memory_avaliable > 0.0 {
-                        break;
-                    }
+            if let Some(value) = parse("MemTotal:", line) {
+                memory_total = value / (1024.0 * 1024.0);
+                if memory_avaliable > 0.0 {
+                    break;
                 }
-            } else if line.starts_with("MemAvailable:") {
-                if let Some(val) = line.split_whitespace().nth(1) {
-                    memory_avaliable = val.parse::<f32>().unwrap_or_default() / (1024.0 * 1024.0);
-                    if memory_total > 0.0 {
-                        break;
-                    }
+            } else if let Some(value) = parse("MemAvailable:", line) {
+                memory_avaliable = value / (1024.0 * 1024.0);
+                if memory_total > 0.0 {
+                    break;
                 }
             }
         }
@@ -80,9 +84,7 @@ fn request_mem() -> (f32, f32) {
 
 /// Returns the currently CPU temperature.
 fn request_temperature() -> f32 {
-    if let Ok(temperature) = fs::read_to_string(TEMPERATURE_FILE) {
-        temperature.trim().parse::<f32>().unwrap_or_default() / 1000.0
-    } else {
-        0.0
-    }
+    fs::read_to_string(TEMPERATURE_FILE)
+        .map(|v| v.trim().parse::<f32>().unwrap_or_default() / 1000.0)
+        .unwrap_or_default()
 }

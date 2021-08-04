@@ -14,7 +14,7 @@ opt-level = 3
 lto = true
 
 [dependencies]
-actix-web = "3.1"
+actix-web = "3.3"
 chrono = "0.4"
 num_cpus = "1.13"
 serde = "1.0"
