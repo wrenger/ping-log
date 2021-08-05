@@ -6,15 +6,9 @@ use std::process::Command;
 use std::thread;
 
 use chrono::{Duration, Local, Timelike};
+use regex::Regex;
 
 use super::ping::Ping;
-
-#[cfg(not(target_os = "macos"))]
-const WAIT_ARG: &str = "-w 1";
-#[cfg(target_os = "macos")]
-const WAIT_ARG: &str = "-W 1";
-
-const COUNT_ARG: &str = "-c 1";
 
 pub fn monitor(host: &str, interval: u32, log_dir: &Path) {
     loop {
@@ -29,6 +23,13 @@ pub fn monitor(host: &str, interval: u32, log_dir: &Path) {
 }
 
 fn perform_request(host: &str) -> Ping {
+    #[cfg(not(target_os = "macos"))]
+    const WAIT_ARG: &str = "-w 1";
+    #[cfg(target_os = "macos")]
+    const WAIT_ARG: &str = "-W 1";
+
+    const COUNT_ARG: &str = "-c 1";
+
     let time = Local::now().timestamp();
     let output = Command::new("ping")
         .args(&[COUNT_ARG, WAIT_ARG, &host])
@@ -49,49 +50,19 @@ fn perform_request(host: &str) -> Ping {
 }
 
 fn parse(input: &str) -> f64 {
-    use nom::bytes::complete::{tag, take_while};
-    use nom::character::complete::char as nchar;
-    use nom::character::complete::{digit1, line_ending};
-    use nom::combinator::{opt, recognize};
-    use nom::number::complete::double;
-    use nom::sequence::{delimited, pair, preceded, tuple};
+    lazy_static::lazy_static! {
+        static ref PING_RE: Regex =  Regex::new(
+            r#"^64 bytes from [\w\.\-:]+( \([\w\.\-:]+\))?: icmp_seq=\d+ ttl=\d+ time=([\d.]+) ms"#,
+        )
+        .unwrap();
+    }
 
-    type Result<'a, T> = nom::IResult<&'a str, T, ()>;
-
-    fn skip_line(input: &str) -> Result<&str> {
-        if let Some((output, input)) = input.split_once('\n') {
-            Ok((input, output))
-        } else {
-            Err(nom::Err::Error(()))
+    if let Some((_, input)) = input.split_once('\n') {
+        if let Some(found) = PING_RE.captures(input) {
+            return found[2].parse().unwrap_or(1000.0);
         }
     }
-    fn addr(input: &str) -> Result<&str> {
-        recognize(take_while(|c: char| {
-            c.is_alphanumeric() || c == '.' || c == ':' || c == '-' || c == '_'
-        }))(input)
-    }
-    fn host(input: &str) -> Result<&str> {
-        recognize(pair(addr, opt(delimited(tag(" ("), addr, nchar(')')))))(input)
-    }
-    fn response(input: &str) -> Result<f64> {
-        delimited(
-            tuple((
-                tag("64 bytes from "),
-                host,
-                opt(nchar(':')),
-                nchar(' '),
-                delimited(tag("icmp_seq="), digit1, nchar(' ')),
-                delimited(tag("ttl="), digit1, nchar(' ')),
-            )),
-            delimited(tag("time="), double, tag(" ms")),
-            line_ending,
-        )(input)
-    }
-
-    match preceded(skip_line, response)(input) {
-        Ok((_, o)) => o,
-        _ => 1000.0,
-    }
+    1000.0
 }
 
 fn write_request(dir: &Path, log: Ping) -> Result<()> {
@@ -106,10 +77,7 @@ fn write_request(dir: &Path, log: Ping) -> Result<()> {
         remove_old_logs(dir);
     }
 
-    let mut file = OpenOptions::new()
-        .create(true)
-        .append(true)
-        .open(path)?;
+    let mut file = OpenOptions::new().create(true).append(true).open(path)?;
     writeln!(file, "{}", log)?;
     Ok(())
 }
