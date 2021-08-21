@@ -1,0 +1,10 @@
+image: rustembedded/cross:aarch64-unknown-linux-gnu
+
+stages:
+  - test
+
+unit-test:
+  stage: test
+  script:
+    - rustc --version
+    - cargo test
