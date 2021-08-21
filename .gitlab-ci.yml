@@ -6,5 +6,4 @@ stages:
 unit-test:
   stage: test
   script:
-    - rustc --version
     - cargo test
