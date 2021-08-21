@@ -44,3 +44,18 @@ cargo run -- <args>
 
 [x] Gzip compression
 [x] Include bundled html directly in server binary
+
+
+## Docker CI Cross-Compilation
+
+```bash
+# Build the docker image (only once)
+docker build -t registry.gitlab.com/wrenger/rust-ping-log docker
+# Upload to GitLab CI (optional)
+docker push registry.gitlab.com/wrenger/rust-ping-log
+# Execute locally
+docker run --rm -it --user "$(id -u)":"$(id -g)" \
+    --volume=$(pwd):/home/docker/project -w /home/docker/project \
+    registry.gitlab.com/wrenger/rust-ping-log \
+    cargo build --target=aarch64-unknown-linux-gnu --release
+```
