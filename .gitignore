@@ -4,6 +4,5 @@
 /drop/
 # Rust
 Cargo.lock
-.cargo
 /target/
 **/*.rs.bk
