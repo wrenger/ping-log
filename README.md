@@ -8,7 +8,29 @@ permanently inside the network.
 It is build using [Rust](https://www.rust-lang.org/) and the
 [actix](https://actix.rs/) framework.
 
-## Setup
+# Usage
+
+The latest release for Raspberry Pi 4 and newer can be downloaded [here](https://gitlab.com/wrenger/rust-ping-log/-/releases).
+
+This can be executed with:
+
+```bash
+# after unzipping and navigating into the diretory:
+./ping-<version>-aarch64
+```
+
+The commandline arguments are:
+
+| Argument                 | Description                        |
+|--------------------------|------------------------------------|
+| -h,--help                | Show this help message and exit    |
+| -i,--interval INTERVAL   | Ping interval in seconds           |
+| -p,--ping-host PING_HOST | Host for ping requests             |
+| -l,--logs LOGS           | Directory for the log files        |
+| -w,--web-host WEB_HOST   | Host ip for the webserver          |
+| --web DIR                | Web server root directory          |
+
+## Build
 
 First [Rust](https://www.rust-lang.org/learn/get-started) has to be installed.
 
@@ -18,35 +40,19 @@ First [Rust](https://www.rust-lang.org/learn/get-started) has to be installed.
 cargo run
 ```
 
-> Cross-compiling can be done with [cross](https://github.com/rust-embedded/cross)
->
-> E.g. for the raspberry pi:
-> 32bit: `cross build --target armv7-unknown-linux-gnueabihf`
-> 64bit: `cross build --target aarch64-unknown-linux-gnu`
+> For cross compiling with docker see down below.
 
 **Optional arguments:**
+
 ```bash
 cargo run -- <args>
 ```
 
-| Argument                 | Description                        |
-|--------------------------|------------------------------------|
-| -h,--help                | Show this help message and exit    |
-| -i,--interval INTERVAL   | Ping interval in seconds           |
-| -p,--ping-host PING_HOST | Host for ping requests             |
-| -l,--logs LOGS           | Directory for the log files        |
-| -w,--web-host WEB_HOST   | Host ip for the webserver          |
-| -r,--web-root WEB_ROOT   | Web server root directory          |
-
-------
-
-## TODO
-
-[x] Gzip compression
-[x] Include bundled html directly in server binary
-
+> The commandline arguments (`<args>`) are the same as above.
 
 ## Docker CI Cross-Compilation
+
+For the 64bit Raspberry Pi 4 and newer.
 
 ```bash
 # Build the docker image (only once)

@@ -1,6 +1,6 @@
 [package]
 name = "ping-log"
-version = "0.2.0"
+version = "0.3.0"
 authors = ["Lars Wrenger <lars@wrenger.net>"]
 description = "Simple RESTful webserver for logging and visualizing network access times."
 repository = "https://gitlab.com/wrenger/rust-ping-log"

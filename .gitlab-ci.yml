@@ -1,5 +1,3 @@
-image: registry.gitlab.com/wrenger/rust-ping-log
-
 stages:
   - test
   - build
@@ -14,18 +12,31 @@ variables:
 
 unit-test:
   stage: test
+  image: registry.gitlab.com/wrenger/rust-ping-log
   script:
     - rustc --version
     - cargo test
 
-build:
+build-frontend:
   stage: build
+  image: node
+  rules:
+    - if: $CI_COMMIT_TAG
+  script:
+    - cd ping-view
+    - npm install && npm run-script build
+  artifacts:
+    paths:
+      - ping-view/build/
+
+build-backend:
+  stage: build
+  image: registry.gitlab.com/wrenger/rust-ping-log
   rules:
     - if: $CI_COMMIT_TAG
   script:
     - cargo build --release --target=aarch64-unknown-linux-gnu
-    - mkdir bin && cp target/aarch64-unknown-linux-gnu/release/rust-ping-log bin/ping-$CI_COMMIT_TAG-aarch64
-    - mkdir bin/ping-view && mv ping-view/build bin/ping-view
+    - mkdir bin && cp target/aarch64-unknown-linux-gnu/release/ping-log bin/ping-$CI_COMMIT_TAG-aarch64
   artifacts:
     paths:
       - bin/
@@ -36,8 +47,10 @@ upload:
   rules:
     - if: $CI_COMMIT_TAG
   script:
+    - mkdir bin/ping-view && mv ping-view/build bin/ping-view
+    - zip -r ping-$CI_COMMIT_TAG-aarch64.zip bin/ping-view bin/ping-$CI_COMMIT_TAG-aarch64
     - |
-      curl --header "JOB-TOKEN: ${CI_JOB_TOKEN}" --upload-file bin/ping-$CI_COMMIT_TAG-aarch64 ${PACKAGE_REGISTRY_URL}/$CI_COMMIT_TAG/ping-$CI_COMMIT_TAG-aarch64
+      curl --header "JOB-TOKEN: ${CI_JOB_TOKEN}" --upload-file ping-$CI_COMMIT_TAG-aarch64.zip ${PACKAGE_REGISTRY_URL}/$CI_COMMIT_TAG/ping-$CI_COMMIT_TAG-aarch64.zip
 
 release:
   # Caution, as of 2021-02-02 these assets links require a login, see:
@@ -49,4 +62,4 @@ release:
   script:
     - |
       release-cli create --name "Release $CI_COMMIT_TAG" --tag-name $CI_COMMIT_TAG \
-        --assets-link "{\"name\":\"ping-$CI_COMMIT_TAG-aarch64\",\"url\":\"${PACKAGE_REGISTRY_URL}/$CI_COMMIT_TAG/ping-$CI_COMMIT_TAG-aarch64\"}"
+        --assets-link "{\"name\":\"ping-$CI_COMMIT_TAG-aarch64.zip\",\"url\":\"${PACKAGE_REGISTRY_URL}/$CI_COMMIT_TAG/ping-$CI_COMMIT_TAG-aarch64.zip\"}"
