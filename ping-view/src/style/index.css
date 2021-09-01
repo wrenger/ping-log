@@ -82,11 +82,6 @@ div.box {
     margin: 20px auto;
 }
 
-canvas.chart {
-    width: 100%;
-    height: 250px;
-}
-
 div.padded {
     padding: 10px;
 }

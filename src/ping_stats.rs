@@ -1,4 +1,4 @@
-use super::ping::{History, Ping};
+use super::ping::Ping;
 
 use std::fs::{self, read_dir};
 use std::path::Path;
@@ -72,50 +72,9 @@ fn parse(input: &str) -> Vec<Ping> {
     result
 }
 
-/// Returns the accumulated pings per hour for the given period
-pub fn read_history<P: AsRef<Path>>(
-    log_dir: P,
-    offset: usize,
-    count: usize,
-    start: i64,
-    end: i64,
-) -> Vec<History> {
-    let pings = read_log(log_dir, offset, count * 65, start, end);
-    generate_history(&pings)
-}
-
-/// Generates a list of accumulated pings per hour
-fn generate_history(log: &[Ping]) -> Vec<History> {
-    let mut chunks: Vec<History> = vec![];
-    let mut start = 0;
-    let mut end = 0;
-    let mut until = if !log.is_empty() {
-        log[0].time / 3600 * 3600
-    } else {
-        0
-    };
-
-    for l in log {
-        while l.time < until {
-            chunks.push(History::from(until + 3600, &log[start..end]));
-
-            start = end;
-            until -= 3600;
-        }
-        end += 1;
-    }
-    if end > start {
-        chunks.push(History::from(until + 3600, &log[start..end]));
-    }
-
-    chunks
-}
-
 #[cfg(test)]
 mod test {
     use super::*;
-
-    use std::f64::NAN;
 
     #[test]
     fn test_parse() {
@@ -126,39 +85,6 @@ mod test {
                 Ping::new(1626457740, 1000.0),
                 Ping::new(1626457680, 11.5),
             ]
-        );
-    }
-
-    #[test]
-    fn test_generate_history() {
-        let log = [Ping::new(1536062893, 10.0), Ping::new(1536059293, 20.0)];
-
-        let history = generate_history(&log);
-
-        assert_eq!(2, history.len());
-        assert_eq!(
-            History::new(1536066000, 10.0, 10.0, 10.0, 0.0, 1),
-            history[0]
-        );
-        assert_eq!(
-            History::new(1536062400, 20.0, 20.0, 20.0, 0.0, 1),
-            history[1]
-        );
-
-        let log = [Ping::new(1536062893, 10.0), Ping::new(1536055693, 20.0)];
-
-        let history = generate_history(&log);
-        println!("{:?}", history);
-
-        assert_eq!(3, history.len());
-        assert_eq!(
-            History::new(1536066000, 10.0, 10.0, 10.0, 0.0, 1),
-            history[0]
-        );
-        assert_eq!(History::new(1536062400, NAN, NAN, NAN, NAN, 0), history[1]);
-        assert_eq!(
-            History::new(1536058800, 20.0, 20.0, 20.0, 0.0, 1),
-            history[2]
         );
     }
 }

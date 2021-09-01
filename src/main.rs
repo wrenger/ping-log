@@ -39,6 +39,10 @@ struct Opt {
     #[structopt(short, long, parse(from_os_str), default_value = "log")]
     logs: PathBuf,
 
+    /// Filepath to the web directory
+    #[structopt(long, parse(from_os_str), default_value = "ping-view/build")]
+    web: PathBuf,
+
     /// Address and port of this webserver
     #[structopt(short, long, default_value = "127.0.0.1:8081")]
     web_host: SocketAddr,
@@ -75,5 +79,5 @@ async fn main() -> std::io::Result<()> {
             thread::sleep(Duration::from_secs((interval - current_seconds) as u64));
         });
     };
-    server::run(opt.web_host, opt.logs, mc_state).await
+    server::run(opt.web_host, opt.logs, opt.web, mc_state).await
 }

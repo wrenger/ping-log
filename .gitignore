@@ -1,7 +1,11 @@
 .vscode/
+.DS_Store
+
 # temp
 /log/
 /drop/
+/bin/
+
 # Rust
 Cargo.lock
 /target/

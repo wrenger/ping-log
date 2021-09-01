@@ -235,7 +235,7 @@ select {
     appearance: none;
     text-align: left;
     padding: 5px 24px 5px 10px;
-    background-image: url(/static/images/dropdown.svg);
+    background-image: url(../images/dropdown.svg);
     background-position: center right 6px;
     background-size: 16px 16px;
     background-repeat: no-repeat;
@@ -259,7 +259,7 @@ input[type=checkbox] {
 
 input[type=checkbox]:checked {
     background-color: var(--highlight);
-    background-image: url(/static/images/check.svg);
+    background-image: url(../images/check.svg);
 }
 
 input[type=radio] {
@@ -269,7 +269,7 @@ input[type=radio] {
 
 input[type=radio]:checked {
     background-color: var(--highlight);
-    background-image: url(/static/images/radio.svg);
+    background-image: url(../images/radio.svg);
 }
 
 input[type=radio]:disabled,

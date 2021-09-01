@@ -25,6 +25,7 @@ build:
   script:
     - cargo build --release --target=aarch64-unknown-linux-gnu
     - mkdir bin && cp target/aarch64-unknown-linux-gnu/release/rust-ping-log bin/ping-$CI_COMMIT_TAG-aarch64
+    - mkdir bin/ping-view && mv ping-view/build bin/ping-view
   artifacts:
     paths:
       - bin/
