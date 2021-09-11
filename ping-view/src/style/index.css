@@ -19,26 +19,48 @@ div.reload {
     cursor: pointer;
 }
 
-div.title {
-    font-size: 28px;
+article.box {
+    background-color: var(--theme-lighter);
+    border-radius: 4px;
+    max-width: 1000px;
+    margin: 20px auto;
+    overflow: hidden;
+}
+
+div.padded {
     padding: 10px;
 }
 
-div.title>h1 {
-    text-align: center;
-    padding: 0px 0 15px 0;
-    margin: 0;
-    border-bottom: var(--text-light) 1px solid;
+article.box > header {
+    min-height: 20px;
+    padding: 2px;
+    font-size: 15px;
+    text-align: left;
+    color: var(--theme-light);
+    font-weight: lighter;
 }
 
-div.stats {
+article.box > section {
+    padding: 0 20px;
+}
+
+article.box > footer {
+    min-height: 20px;
+}
+
+.row {
+    display: flex;
+    flex-direction: row;
+}
+
+.row > .stretch {
+    flex: 1;
+}
+
+article.stats {
     margin: 50px auto;
-    background-color: var(--theme-lighter);
-    border-radius: 4px;
     text-align: center;
-    padding: 15px;
     max-width: 375px;
-    user-select: text;
 }
 
 span.stats-min,
@@ -54,7 +76,7 @@ span.stats-avg {
 span.stats-min::after,
 span.stats-max::after,
 span.stats-avg::after {
-    content: " ms";
+    content: " ms ";
 }
 
 div.stats-lost::before {
@@ -72,33 +94,4 @@ div.stats-lost::before,
 div.stats-lost::after {
     color: var(--bg-gray);
     font-size: 0.8em;
-}
-
-div.box {
-    padding: 20px;
-    background-color: var(--theme-lighter);
-    border-radius: 4px;
-    max-width: 1000px;
-    margin: 20px auto;
-}
-
-div.padded {
-    padding: 10px;
-}
-
-div.box > h1 {
-    font-size: 1.4em;
-    text-align: left;
-    margin: 0;
-    color: var(--theme-light);
-    font-weight: normal;
-}
-
-.row {
-    display: flex;
-    flex-direction: row;
-}
-
-.row > .stretch {
-    flex: 1;
 }

@@ -111,21 +111,24 @@ export class History extends React.Component<HistoryProps, HistoryState> {
         }
 
         return (
-            <div className="box">
-                <h2>Daily</h2>
-                <select name="select-day" value={this.state.day} onChange={this.onDayChange.bind(this)}>
-                    {[...range(0, 7).map(i => (
-                        <option value={i} key={i}>
-                            {moment().subtract(i, "day").format("dd DD.MM.YYYY")}
-                        </option>
-                    ))]}
-                </select>
-                <div>
+            <article className="box">
+                <header className="row">
+                    <span className="stretch">Daily</span>
+                    <select className="header-right" name="select-day" value={this.state.day} onChange={this.onDayChange.bind(this)}>
+                        {[...range(0, 7).map(i => (
+                            <option value={i} key={i}>
+                                {moment().subtract(i, "day").format("dd DD.MM.YYYY")}
+                            </option>
+                        ))]}
+                    </select>
+                </header>
+                <section>
                     <Line className="chart"
                         options={HISTORY_CHART_LOG}
                         data={data} />
-                </div>
-            </div>
+                </section>
+                <footer></footer>
+            </article>
         );
     }
 }

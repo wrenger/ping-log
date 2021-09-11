@@ -86,14 +86,15 @@ export class Pings extends React.Component<PingsProps> {
         };
 
         return (
-            <div className="box">
-                <h2>Recent Hour</h2>
-                <div>
+            <article className="box">
+                <header>Recent</header>
+                <section>
                     <Line className="chart"
                         options={RECENT_CHART_OPTIONS}
                         data={data} />
-                </div>
-            </div>
+                </section>
+                <footer></footer>
+            </article>
         );
     }
 }

@@ -54,7 +54,7 @@ namespace api {
         return def;
     }
 
-
+    /** Fetch the most recent pings (latest first) */
     export async function pings(start: Date, end: Date, count: number): Promise<PingData[]> {
         const response = await fetch(encodeURI(baseUrl() + API_LOG + "?" + new URLSearchParams({
             start: Math.round(start.getTime() / 1000.0).toString(),
@@ -71,24 +71,29 @@ namespace api {
         });
     }
 
+    /** Fetch the hardware statistics. */
     export async function hardware(): Promise<HardwareData> {
         const response = await fetch(baseUrl() + API_HW);
         return await response.json();
     }
 
+    /** Fetch server status. */
     export async function mcServers(): Promise<MCServer[]> {
         const response = await fetch(baseUrl() + API_MC);
         return await response.json();
     }
 
-    export function stats(time: Date, pings: Iterable<PingData>): HistoryData {
+    /** Compute the combined statistic for all pings before the given time. */
+    export function stats(time: Date, pings: PeekableIterator<PingData>): HistoryData {
         let min = 1000.0;
         let max = 0.0;
         let sum = 0.0;
         let lost = 0.0;
         let count = 0;
 
-        for (const entry of pings) {
+        while (!pings.peek().done && pings.peek().value.time > time) {
+            let entry = pings.peek().value;
+
             if (entry.ping < min) {
                 min = entry.ping;
             }
@@ -101,13 +106,15 @@ namespace api {
                 sum += entry.ping;
             }
             count += 1;
+
+            pings.next();
         }
 
         let avg = Math.round(1000.0 * sum / (count - lost)) / 1000.0;
         lost = Math.round(1000.0 * lost / count) / 1000.0;
 
         return {
-            time: time,
+            time: moment(time).add(1, "hour").toDate(),
             min: min >= 1000.0 ? 0.0 : min,
             max: max <= 0.0 ? 0.0 : max,
             avg: isNaN(avg) ? 0.0 : avg,
@@ -116,6 +123,7 @@ namespace api {
         };
     }
 
+    /** Compute the hourly statistics for all pings. */
     export function* statsIter(pings: PeekableIterator<PingData>): Generator<HistoryData> {
         let first = pings.peek();
         if (first.done) return;
@@ -123,7 +131,7 @@ namespace api {
         let current = moment(first.value.time).startOf("hour");
         while (!pings.peek().done) {
             let until = current.toDate();
-            yield stats(until, pings.take(p => p.time > until));
+            yield stats(until, pings);
             current = current.subtract(1, "hour");
         }
     }

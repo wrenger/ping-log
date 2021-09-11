@@ -8,7 +8,7 @@ import { Pings } from "./Pings";
 import { History } from "./History";
 import api from "./api";
 import moment from "moment";
-import PingStats from "./PingState";
+import PingStats from "./PingStats";
 import { iter } from "./iter";
 
 Chart.defaults.color = "#eeeeee";
@@ -59,17 +59,13 @@ export class App extends React.Component<AppProps, AppState> {
 
         return (
             <div className="log-display">
-                <div className="title">
-                    <h1>Ping Log</h1>
-                </div>
-
                 <PingStats {...stats} />
+
+                <MCServers servers={this.state.mcServers} />
 
                 <Pings pings={this.state.pings} />
 
                 <History pings={this.state.pings} />
-
-                <MCServers servers={this.state.mcServers} />
 
                 <Hardware {...this.state.hardware} />
 

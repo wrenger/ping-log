@@ -304,9 +304,6 @@ table th {
     margin: 0px;
     border: none;
     user-select: text;
-}
-
-table th {
     text-align: left;
 }
 

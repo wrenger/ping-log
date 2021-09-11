@@ -10,22 +10,26 @@ export class MCServers extends React.Component<MCServersProps> {
         return (
             <div>
                 {this.props.servers.map((s, i) => (
-                    <div className="stats" key={i}>
-                        <table>
-                            <thead>
-                                <tr>
-                                    <th>{s.addr}</th>
-                                    <th>{s.version}</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <tr>
-                                    <td>{s.description}</td>
-                                    <td>{s.players}/{s.max_players}</td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </div>
+                    <article className="box stats" key={i}>
+                        <header>Minecraft</header>
+                        <section>
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>{s.addr}</th>
+                                        <th>{s.version}</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td>{s.description}</td>
+                                        <td>{s.players}/{s.max_players}</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </section>
+                        <footer></footer>
+                    </article>
                 ))}
             </div>
         );

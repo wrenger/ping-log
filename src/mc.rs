@@ -84,7 +84,7 @@ impl Status {
         let data = data.splitn(6, '\0').collect::<Vec<_>>();
         if data.len() == 6 {
             Ok(Status {
-                addr: addr.into(),
+                addr: addr.strip_suffix(":25565").unwrap_or(addr).into(),
                 version: data[2].into(),
                 description: data[3].into(),
                 players: data[4].parse().map_err(|_| io::ErrorKind::InvalidData)?,

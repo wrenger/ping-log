@@ -34,11 +34,19 @@ export class PeekableIterator<T> implements IterableIterator<T> {
     }
     take(check: (arg: T) => boolean): PeekableIterator<T> {
         function* take(iter: PeekableIterator<T>, check: (arg: T) => boolean) {
-            for (let e = iter.next(); !e.done && check(e.value); e = iter.next())
-                yield e.value;
-
+            for (const elem of iter) {
+                if (!check(elem)) return;
+                yield elem;
+            }
         }
         return new PeekableIterator(take(this, check));
+    }
+    filter(check: (arg: T) => boolean): PeekableIterator<T> {
+        function* filter(iter: PeekableIterator<T>, check: (arg: T) => boolean) {
+            for (const elem of iter)
+                if (check(elem)) yield elem;
+        }
+        return new PeekableIterator(filter(this, check));
     }
     map<U>(op: (arg: T) => U): PeekableIterator<U> {
         function* map<U>(iter: PeekableIterator<T>, op: (arg: T) => U) {
