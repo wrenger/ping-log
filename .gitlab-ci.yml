@@ -39,7 +39,7 @@ build-backend:
     - mkdir bin && cp target/aarch64-unknown-linux-gnu/release/ping-log bin/ping-$CI_COMMIT_TAG-aarch64
   artifacts:
     paths:
-      - bin/
+      - bin/aarch64-unknown-linux-gnu
 
 upload:
   stage: upload
@@ -48,9 +48,9 @@ upload:
     - if: $CI_COMMIT_TAG
   script:
     - mkdir bin/ping-view && mv ping-view/build bin/ping-view
-    - zip -r ping-$CI_COMMIT_TAG-aarch64.zip bin/ping-view bin/ping-$CI_COMMIT_TAG-aarch64
+    - tar -acf ping-$CI_COMMIT_TAG-aarch64.tar.gz bin/ping-view bin/ping-$CI_COMMIT_TAG-aarch64
     - |
-      curl --header "JOB-TOKEN: ${CI_JOB_TOKEN}" --upload-file ping-$CI_COMMIT_TAG-aarch64.zip ${PACKAGE_REGISTRY_URL}/$CI_COMMIT_TAG/ping-$CI_COMMIT_TAG-aarch64.zip
+      curl --header "JOB-TOKEN: ${CI_JOB_TOKEN}" --upload-file ping-$CI_COMMIT_TAG-aarch64.tar.gz ${PACKAGE_REGISTRY_URL}/$CI_COMMIT_TAG/ping-$CI_COMMIT_TAG-aarch64.tar.gz
 
 release:
   # Caution, as of 2021-02-02 these assets links require a login, see:
@@ -62,4 +62,4 @@ release:
   script:
     - |
       release-cli create --name "Release $CI_COMMIT_TAG" --tag-name $CI_COMMIT_TAG \
-        --assets-link "{\"name\":\"ping-$CI_COMMIT_TAG-aarch64.zip\",\"url\":\"${PACKAGE_REGISTRY_URL}/$CI_COMMIT_TAG/ping-$CI_COMMIT_TAG-aarch64.zip\"}"
+        --assets-link "{\"name\":\"ping-$CI_COMMIT_TAG-aarch64.tar.gz\",\"url\":\"${PACKAGE_REGISTRY_URL}/$CI_COMMIT_TAG/ping-$CI_COMMIT_TAG-aarch64.tar.gz\"}"
