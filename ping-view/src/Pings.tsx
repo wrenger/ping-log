@@ -1,6 +1,7 @@
 import React from 'react';
 import moment from 'moment';
 import { Line } from 'react-chartjs-2';
+import { ChartOptions } from 'chart.js';
 
 import api from "./api";
 import { iter } from './iter';
@@ -9,7 +10,7 @@ interface PingsProps {
     pings: api.PingData[],
 }
 
-const RECENT_CHART_OPTIONS = {
+const RECENT_CHART_OPTIONS: ChartOptions<"line"> = {
     aspectRatio: 3,
     scales: {
         ms: {
@@ -35,9 +36,6 @@ const RECENT_CHART_OPTIONS = {
                 minUnit: "second"
             }
         }
-    },
-    legend: {
-        display: true
     },
     elements: {
         line: {
