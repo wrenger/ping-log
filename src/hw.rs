@@ -40,8 +40,8 @@ impl Status {
 
 /// Returns the current CPU load.
 fn request_load() -> f32 {
-    if let Ok(load) = fs::read_to_string(LOAD_AVG_FILE) {
-        load.splitn(3, ' ')
+    if let Ok(data) = fs::read_to_string(LOAD_AVG_FILE) {
+        data.splitn(3, ' ')
             .nth(1)
             .and_then(|l| l.parse::<f32>().ok())
             .unwrap_or_default()
@@ -54,16 +54,17 @@ fn request_load() -> f32 {
 /// Returns the currently used and total memory.
 fn request_mem() -> (f32, f32) {
     fn parse(prefix: &str, line: &str) -> Option<f32> {
-        line.strip_prefix(prefix)
-            .map(str::trim)
-            .and_then(|s| s.strip_suffix(" kB"))
-            .and_then(|s| s.parse().ok())
+        line.strip_prefix(prefix)?
+            .trim()
+            .strip_suffix(" kB")?
+            .parse()
+            .ok()
     }
 
-    if let Ok(load) = fs::read_to_string(MEM_INFO_FILE) {
+    if let Ok(data) = fs::read_to_string(MEM_INFO_FILE) {
         let mut memory_avaliable = 0.0;
         let mut memory_total = 0.0;
-        for line in load.split('\n') {
+        for line in data.split('\n') {
             if let Some(value) = parse("MemTotal:", line) {
                 memory_total = value / (1024.0 * 1024.0);
                 if memory_avaliable > 0.0 {
