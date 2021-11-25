@@ -4,18 +4,18 @@ use std::io::{Result, Write};
 use std::path::Path;
 use std::process::Command;
 use std::thread;
+use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
-use chrono::{Duration, Local, Timelike};
+use chrono::Local;
 use regex::Regex;
 
 use super::ping::Ping;
 
-pub fn monitor(host: &str, interval: u32, log_dir: &Path) {
+pub fn monitor(host: &str, interval: u64, log_dir: &Path) {
     loop {
-        let current_seconds = Local::now().second();
-        thread::sleep(std::time::Duration::from_secs(
-            (interval - current_seconds % interval) as u64,
-        ));
+        let epoch = SystemTime::now().duration_since(UNIX_EPOCH).unwrap();
+        let next = Duration::from_secs(((epoch.as_secs() + interval) / interval) * interval);
+        thread::sleep(next - epoch);
 
         let log = perform_request(host);
         write_request(log_dir, log).expect("write log error");
@@ -83,7 +83,7 @@ fn write_request(dir: &Path, log: Ping) -> Result<()> {
 }
 
 fn remove_old_logs(dir: &Path) {
-    let oldest = Local::now() - Duration::weeks(8);
+    let oldest = Local::now() - chrono::Duration::weeks(8);
     let oldest = oldest.format("%y%m%d").to_string();
 
     if let Ok(entries) = read_dir(dir) {

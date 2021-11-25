@@ -8,9 +8,8 @@ use std::net::SocketAddr;
 use std::path::PathBuf;
 use std::sync::{Arc, RwLock};
 use std::thread;
-use std::time::Duration;
+use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
-use chrono::{Local, Timelike};
 use structopt::StructOpt;
 
 mod hw;
@@ -29,7 +28,7 @@ mod server;
 struct Opt {
     /// Time between ping requests
     #[structopt(short, long, default_value = "60")]
-    interval: u32,
+    interval: u64,
 
     /// Address or url of the ping target server
     #[structopt(short, long, default_value = "1.1.1.1")]
@@ -52,8 +51,8 @@ struct Opt {
     mc_hosts: Vec<String>,
 }
 
-#[actix_web::main]
-async fn main() -> std::io::Result<()> {
+#[tokio::main]
+async fn main() {
     let opt = Opt::from_args();
 
     {
@@ -75,8 +74,9 @@ async fn main() -> std::io::Result<()> {
         thread::spawn(move || loop {
             mc::Status::refresh(&mc_state, &mc_hosts);
 
-            let current_seconds = Local::now().second();
-            thread::sleep(Duration::from_secs((interval - current_seconds) as u64));
+            let epoch = SystemTime::now().duration_since(UNIX_EPOCH).unwrap();
+            let next = Duration::from_secs(((epoch.as_secs() + interval) / interval) * interval);
+            thread::sleep(next - epoch);
         });
     };
     server::run(opt.web_host, opt.logs, opt.web, mc_state).await
