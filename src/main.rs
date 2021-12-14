@@ -7,7 +7,6 @@
 use std::net::SocketAddr;
 use std::path::PathBuf;
 use std::sync::{Arc, RwLock};
-use std::thread;
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
 use structopt::StructOpt;
@@ -61,7 +60,7 @@ async fn main() {
         let interval = opt.interval;
         let ping_host = opt.ping_host;
 
-        thread::spawn(move || ping_request::monitor(&ping_host, interval, &log_dir));
+        tokio::spawn(async move { ping_request::monitor(&ping_host, interval, &log_dir).await });
     };
 
     let mc_state = Arc::new(RwLock::new(Vec::new()));
@@ -71,12 +70,16 @@ async fn main() {
         let mc_hosts = opt.mc_hosts.clone();
         let mc_state = mc_state.clone();
 
-        thread::spawn(move || loop {
-            mc::Status::refresh(&mc_state, &mc_hosts);
+        tokio::spawn(async move {
+            loop {
+                mc::Status::refresh(&mc_state, &mc_hosts).await;
 
-            let epoch = SystemTime::now().duration_since(UNIX_EPOCH).unwrap();
-            let next = Duration::from_secs(((epoch.as_secs() + interval) / interval) * interval);
-            thread::sleep(next - epoch);
+                let epoch = SystemTime::now().duration_since(UNIX_EPOCH).unwrap();
+                let next =
+                    Duration::from_secs(((epoch.as_secs() + interval) / interval) * interval);
+
+                tokio::time::sleep(next - epoch).await;
+            }
         });
     };
     server::run(opt.web_host, opt.logs, opt.web, mc_state).await

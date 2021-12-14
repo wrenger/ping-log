@@ -3,7 +3,6 @@ use std::fs::{read_dir, remove_file};
 use std::io::{Result, Write};
 use std::path::Path;
 use std::process::Command;
-use std::thread;
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
 use chrono::Local;
@@ -11,18 +10,19 @@ use regex::Regex;
 
 use super::ping::Ping;
 
-pub fn monitor(host: &str, interval: u64, log_dir: &Path) {
+pub async fn monitor(host: &str, interval: u64, log_dir: &Path) {
     loop {
         let epoch = SystemTime::now().duration_since(UNIX_EPOCH).unwrap();
         let next = Duration::from_secs(((epoch.as_secs() + interval) / interval) * interval);
-        thread::sleep(next - epoch);
 
-        let log = perform_request(host);
+        tokio::time::sleep(next - epoch).await;
+
+        let log = perform_request(host).await;
         write_request(log_dir, log).expect("write log error");
     }
 }
 
-fn perform_request(host: &str) -> Ping {
+async fn perform_request(host: &str) -> Ping {
     #[cfg(not(target_os = "macos"))]
     const WAIT_ARG: &str = "-w 1";
     #[cfg(target_os = "macos")]

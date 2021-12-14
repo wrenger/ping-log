@@ -17,11 +17,11 @@ pub struct Status {
 
 impl Status {
     /// Performs server ping requests and updates the cache.
-    pub fn refresh<S: AsRef<str>>(state: &RwLock<Vec<Status>>, addresses: &[S]) {
+    pub async fn refresh<S: AsRef<str>>(state: &RwLock<Vec<Status>>, addresses: &[S]) {
         let mut current_status = Vec::with_capacity(addresses.len());
         for addr in addresses {
             current_status.push(
-                Status::request(addr.as_ref()).unwrap_or_else(|_| Status::default(addr.as_ref())),
+                Status::request(addr.as_ref()).await.unwrap_or_else(|_| Status::default(addr.as_ref())),
             );
         }
         let mut status = state.write().unwrap();
@@ -34,7 +34,7 @@ impl Status {
     /// - FE: packet identifier for a server list ping
     /// - 01: server list ping's payload (always 1)
     /// - ... optional data
-    pub fn request(addr: &str) -> io::Result<Status> {
+    pub async fn request(addr: &str) -> io::Result<Status> {
         let socket_addr = ToSocketAddrs::to_socket_addrs(&addr)?
             .next()
             .ok_or(io::ErrorKind::AddrNotAvailable)?;
