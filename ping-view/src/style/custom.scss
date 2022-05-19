@@ -3,6 +3,7 @@
 @import "~@blueprintjs/icons/lib/css/blueprint-icons.css";
 @import "~@blueprintjs/datetime/lib/css/blueprint-datetime.css";
 @import "~@blueprintjs/popover2/lib/css/blueprint-popover2.css";
+@import "~@blueprintjs/core/lib/scss/variables";
 
 body,
 html {
@@ -11,7 +12,7 @@ html {
 }
 
 body {
-    background: #252A31;
+    background: $pt-dark-app-background-color;
 }
 
 .box {
@@ -41,4 +42,16 @@ body {
 
 .full-width {
     width: 100%;
+}
+
+.center {
+    text-align: center;
+}
+
+.stats-avg {
+    padding: 0 15px;
+}
+
+td.td-label {
+    text-align: right;
 }

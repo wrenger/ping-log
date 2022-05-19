@@ -1,16 +1,16 @@
 import { Chart } from "chart.js";
 import 'chartjs-adapter-moment';
-
 import React from 'react';
+import { Button } from "@blueprintjs/core";
+import moment from "moment";
+
 import { Hardware } from './Hardware';
 import { MCServers } from './MCServers';
 import { Pings } from "./Pings";
 import { History } from "./History";
 import api from "./api";
-import moment from "moment";
 import PingStats from "./PingStats";
 import { iter } from "./iter";
-import { Button } from "@blueprintjs/core";
 
 Chart.defaults.color = "#eeeeee";
 Chart.defaults.animation = false;
@@ -37,7 +37,7 @@ export class App extends React.Component<AppProps, AppState> {
 
     async reload() {
         let [pings, mcServers, hardware] = await Promise.all([
-            api.pings(new Date(), moment().subtract(1, "month").toDate(), 31 * 24 * 60),
+            api.pings(new Date(), moment().subtract(1, "month").startOf("day").toDate(), 32 * 24 * 60),
             api.mcServers(),
             api.hardware(),
         ]);
@@ -60,18 +60,16 @@ export class App extends React.Component<AppProps, AppState> {
 
         return (
             <div className="log-display">
-
                 <PingStats {...stats} />
-
                 <MCServers servers={this.state.mcServers} />
-
                 <Pings pings={this.state.pings} />
-
                 <History pings={this.state.pings} />
-
                 <Hardware {...this.state.hardware} />
-
-                <Button className="reload bp4-icon-refresh" onClick={this.reload.bind(this)} />
+                <Button
+                    className="reload bp4-icon-refresh"
+                    onClick={this.reload.bind(this)}
+                    title="Refresh"
+                />
             </div>
         );
     }

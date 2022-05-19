@@ -87,12 +87,9 @@ export class Pings extends React.Component<PingsProps> {
         return (
             <Card elevation={Elevation.TWO} className="box">
                 <h5 className="bp4-heading">Recent</h5>
-                <section>
-                    <Line className="chart"
-                        options={RECENT_CHART_OPTIONS}
-                        data={data} />
-                </section>
-                <footer></footer>
+                <Line className="chart"
+                    options={RECENT_CHART_OPTIONS}
+                    data={data} />
             </Card>
         );
     }

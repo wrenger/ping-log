@@ -8,13 +8,23 @@ export default class PingStats extends React.Component<api.HistoryData> {
         return (
             <Card elevation={Elevation.TWO} className="small-box">
                 <h5 className="bp4-heading">Ping</h5>
-                <div className="selectable">
-                    <div>
-                        <span className="stats-min">{this.props.min.toPrecision(2)}</span>
-                        <span className="stats-avg">{this.props.avg.toPrecision(2)}</span>
-                        <span className="stats-max">{this.props.max.toPrecision(2)}</span>
-                    </div>
-                    <div className="stats-lost">{this.props.lost}</div>
+                <div className="center">
+                    <span>
+                        <span className="bp4-text-disabled">min: </span>
+                        <span className="bp4-text-large">{this.props.min.toPrecision(3)}</span>
+                    </span>
+                    <span className="stats-avg">
+                        <span className="bp4-text-disabled">avg: </span>
+                        <span className="bp4-text-large">{this.props.avg.toPrecision(3)}</span>
+                    </span>
+                    <span>
+                        <span className="bp4-text-disabled">max: </span>
+                        <span className="bp4-text-large">{this.props.max.toPrecision(3)}</span>
+                    </span>
+                </div>
+                <div className="center">
+                    <span className="bp4-text-disabled">lost: </span>
+                    <span className="bp4-text-large">{this.props.lost}</span>
                 </div>
             </Card>
         );

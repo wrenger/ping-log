@@ -4,7 +4,7 @@ import { Line } from 'react-chartjs-2';
 import { ChartOptions } from 'chart.js';
 import { Button, Card, Elevation } from '@blueprintjs/core';
 import { DatePicker } from '@blueprintjs/datetime';
-import { Classes, Popover2 } from '@blueprintjs/popover2';
+import { Popover2 } from '@blueprintjs/popover2';
 
 import api from './api';
 import { iter } from './iter';
@@ -43,6 +43,7 @@ interface HistoryProps {
 
 interface HistoryState {
     date: Date,
+    isOpen: boolean,
 }
 
 export class History extends React.Component<HistoryProps, HistoryState> {
@@ -50,11 +51,18 @@ export class History extends React.Component<HistoryProps, HistoryState> {
         super(props);
         this.state = {
             date: new Date(),
+            isOpen: false,
         };
     }
 
-    private onDateChange(date: Date) {
-        this.setState({ date: date })
+    private onDateChange(date: Date, userChange: boolean) {
+        // Sometime the date can be null
+        if (!date) date = this.state.date;
+        this.setState({ date: date, isOpen: !userChange })
+    }
+
+    private dateInteraction(nextOpenState: boolean) {
+        this.setState({ isOpen: nextOpenState })
     }
 
     render() {
@@ -118,17 +126,20 @@ export class History extends React.Component<HistoryProps, HistoryState> {
                     <span className="stretch">Daily</span>
                     <Popover2
                         interactionKind="click"
-                        placement="bottom"
+                        isOpen={this.state.isOpen}
+                        onInteraction={state => this.dateInteraction(state)}
                         content={
                             <DatePicker
                                 value={this.state.date}
                                 minDate={moment().subtract(1, "month").toDate()}
                                 maxDate={new Date()}
-                                onChange={newDate => this.onDateChange(newDate)}
-                                className={Classes.POPOVER2_DISMISS}
+                                onChange={(newDate, userChange) => this.onDateChange(newDate, userChange)}
                             />
                         }>
-                        <Button text={this.state.date.toLocaleString()} />
+                        <Button
+                            className="bp4-icon-calendar"
+                            text={this.state.date.toLocaleDateString()}
+                        />
                     </Popover2>
                 </h5>
                 <Line className="chart"
