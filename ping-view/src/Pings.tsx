@@ -2,6 +2,7 @@ import React from 'react';
 import moment from 'moment';
 import { Line } from 'react-chartjs-2';
 import { ChartOptions } from 'chart.js';
+import { Card, Elevation } from '@blueprintjs/core';
 
 import api from "./api";
 import { iter } from './iter';
@@ -84,15 +85,15 @@ export class Pings extends React.Component<PingsProps> {
         };
 
         return (
-            <article className="box">
-                <header>Recent</header>
+            <Card elevation={Elevation.TWO} className="box">
+                <h5 className="bp4-heading">Recent</h5>
                 <section>
                     <Line className="chart"
                         options={RECENT_CHART_OPTIONS}
                         data={data} />
                 </section>
                 <footer></footer>
-            </article>
+            </Card>
         );
     }
 }

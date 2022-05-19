@@ -2,8 +2,12 @@ import React from 'react';
 import moment from 'moment';
 import { Line } from 'react-chartjs-2';
 import { ChartOptions } from 'chart.js';
+import { Button, Card, Elevation } from '@blueprintjs/core';
+import { DatePicker } from '@blueprintjs/datetime';
+import { Classes, Popover2 } from '@blueprintjs/popover2';
+
 import api from './api';
-import { iter, range } from './iter';
+import { iter } from './iter';
 
 const HISTORY_CHART_LOG: ChartOptions<"line"> = {
     aspectRatio: 3,
@@ -38,23 +42,23 @@ interface HistoryProps {
 }
 
 interface HistoryState {
-    day: number,
+    date: Date,
 }
 
 export class History extends React.Component<HistoryProps, HistoryState> {
     constructor(props: HistoryProps) {
         super(props);
         this.state = {
-            day: 0,
+            date: new Date(),
         };
     }
 
-    onDayChange(e: React.ChangeEvent<HTMLSelectElement>) {
-        this.setState({ day: Number.parseInt(e.target.value) })
+    private onDateChange(date: Date) {
+        this.setState({ date: date })
     }
 
     render() {
-        const day = moment().subtract(this.state.day, "day");
+        const day = moment(this.state.date);
         const begin = day.startOf("day").toDate();
         const end = day.endOf("day").toDate();
 
@@ -109,24 +113,28 @@ export class History extends React.Component<HistoryProps, HistoryState> {
         }
 
         return (
-            <article className="box">
-                <header className="row">
+            <Card elevation={Elevation.TWO} className="box">
+                <h5 className="bp4-heading row">
                     <span className="stretch">Daily</span>
-                    <select className="header-right" name="select-day" value={this.state.day} onChange={this.onDayChange.bind(this)}>
-                        {[...range(0, 7).map(i => (
-                            <option value={i} key={i}>
-                                {moment().subtract(i, "day").format("dd DD.MM.YYYY")}
-                            </option>
-                        ))]}
-                    </select>
-                </header>
-                <section>
-                    <Line className="chart"
-                        options={HISTORY_CHART_LOG}
-                        data={data} />
-                </section>
-                <footer></footer>
-            </article>
+                    <Popover2
+                        interactionKind="click"
+                        placement="bottom"
+                        content={
+                            <DatePicker
+                                value={this.state.date}
+                                minDate={moment().subtract(1, "month").toDate()}
+                                maxDate={new Date()}
+                                onChange={newDate => this.onDateChange(newDate)}
+                                className={Classes.POPOVER2_DISMISS}
+                            />
+                        }>
+                        <Button text={this.state.date.toLocaleString()} />
+                    </Popover2>
+                </h5>
+                <Line className="chart"
+                    options={HISTORY_CHART_LOG}
+                    data={data} />
+            </Card>
         );
     }
 }

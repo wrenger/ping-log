@@ -1,0 +1,44 @@
+@import "~normalize.css";
+@import "~@blueprintjs/core/lib/css/blueprint.css";
+@import "~@blueprintjs/icons/lib/css/blueprint-icons.css";
+@import "~@blueprintjs/datetime/lib/css/blueprint-datetime.css";
+@import "~@blueprintjs/popover2/lib/css/blueprint-popover2.css";
+
+body,
+html {
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    background: #252A31;
+}
+
+.box {
+    max-width: 1000px;
+    margin: 20px auto;
+}
+
+.small-box {
+    margin: 20px auto;
+    max-width: 375px;
+}
+
+.row {
+    display: flex;
+    flex-direction: row;
+}
+
+.row>.stretch {
+    flex: 1;
+}
+
+.reload {
+    position: fixed;
+    right: 15px;
+    top: 15px;
+}
+
+.full-width {
+    width: 100%;
+}

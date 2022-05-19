@@ -6,13 +6,6 @@ namespace api {
     const API_HW = "/api/hw";
     const API_MC = "/api/mc";
 
-    function baseUrl(): string {
-        if ((globalThis as any).isDev)
-            return "http://localhost:8081";
-        else
-            return "";
-    }
-
     export interface HistoryData {
         time: Date,
         min: number,
@@ -56,7 +49,7 @@ namespace api {
 
     /** Fetch the most recent pings (latest first) */
     export async function pings(start: Date, end: Date, count: number): Promise<PingData[]> {
-        const response = await fetch(encodeURI(baseUrl() + API_LOG + "?" + new URLSearchParams({
+        const response = await fetch(encodeURI(API_LOG + "?" + new URLSearchParams({
             start: Math.round(start.getTime() / 1000.0).toString(),
             end: Math.round(end.getTime() / 1000.0).toString(),
             count: count.toString(),
@@ -73,13 +66,13 @@ namespace api {
 
     /** Fetch the hardware statistics. */
     export async function hardware(): Promise<HardwareData> {
-        const response = await fetch(baseUrl() + API_HW);
+        const response = await fetch(API_HW);
         return await response.json();
     }
 
     /** Fetch server status. */
     export async function mcServers(): Promise<MCServer[]> {
-        const response = await fetch(baseUrl() + API_MC);
+        const response = await fetch(API_MC);
         return await response.json();
     }
 

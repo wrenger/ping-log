@@ -10,6 +10,7 @@ import api from "./api";
 import moment from "moment";
 import PingStats from "./PingStats";
 import { iter } from "./iter";
+import { Button } from "@blueprintjs/core";
 
 Chart.defaults.color = "#eeeeee";
 Chart.defaults.animation = false;
@@ -59,6 +60,7 @@ export class App extends React.Component<AppProps, AppState> {
 
         return (
             <div className="log-display">
+
                 <PingStats {...stats} />
 
                 <MCServers servers={this.state.mcServers} />
@@ -69,7 +71,7 @@ export class App extends React.Component<AppProps, AppState> {
 
                 <Hardware {...this.state.hardware} />
 
-                <div className="reload" onClick={this.reload.bind(this)}>↺</div>
+                <Button className="reload bp4-icon-refresh" onClick={this.reload.bind(this)} />
             </div>
         );
     }
