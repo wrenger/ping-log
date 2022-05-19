@@ -21,7 +21,9 @@ impl Status {
         let mut current_status = Vec::with_capacity(addresses.len());
         for addr in addresses {
             current_status.push(
-                Status::request(addr.as_ref()).await.unwrap_or_else(|_| Status::default(addr.as_ref())),
+                Status::request(addr.as_ref())
+                    .await
+                    .unwrap_or_else(|_| Status::default(addr.as_ref())),
             );
         }
         let mut status = state.write().unwrap();
@@ -98,7 +100,7 @@ impl Status {
     /// Default status when a server is offline.
     fn default(addr: &str) -> Status {
         Status {
-            addr: String::from(addr),
+            addr: addr.strip_suffix(":25565").unwrap_or(addr).into(),
             version: String::new(),
             description: String::from("offline"),
             players: 0,
