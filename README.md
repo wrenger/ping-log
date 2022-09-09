@@ -2,21 +2,57 @@
 
 Simple RESTful webserver for logging and visualizing access times to a specified
 host.
-It is designed for a raspberry pi or other unix based IoT device running
+It is designed for a Raspberry Pi or other Unix-based IoT device running
 permanently inside the network.
 
-It is build using [Rust](https://www.rust-lang.org/) and the
+It is built using [Rust](https://www.rust-lang.org/) and the
 [actix](https://actix.rs/) framework.
 
-# Usage
+# Build
 
-The latest release for Raspberry Pi 4 and newer can be downloaded [here](https://gitlab.com/wrenger/rust-ping-log/-/releases).
+Install [yarn](https://yarnpkg.com/getting-started/install).
 
-This can be executed with:
+**Building the front end:**
+
+```
+cd ping-view
+yarn install
+yarn build
+```
+
+Install [Rust](https://www.rust-lang.org/learn/get-started).
+
+**Build & execute the server:**
 
 ```bash
-# after unzipping and navigating into the diretory:
-./ping-<version>-aarch64
+cargo build
+```
+
+> For cross compilation, I would recommend [cross](https://github.com/cross-rs/cross).
+
+# Development
+
+Development on the frontend can be done using `yarn start`.
+This automatically reloads the webapp on every change.
+
+> Note that the **server has to be started on port 5000** (`cargo run -- -w 127.0.0.1:5000`) for the yarn proxy to find it.
+
+# Deploy
+
+After building the frontend and server, both the server binary (`target/release/ping-log`)
+and the build directory for the webapp (`ping-view/build`) have to be deployed.
+
+If the location of the frontend build directory is different on the target system,
+use the `--web` argument of the server to configure it.
+
+
+**CLI arguments:**
+
+```bash
+# with cargo
+cargo run -r -- <args>
+# or after building & deployment
+<path/to>/ping-log <args>
 ```
 
 The commandline arguments are:
@@ -29,39 +65,3 @@ The commandline arguments are:
 | -l,--logs LOGS           | Directory for the log files        |
 | -w,--web-host WEB_HOST   | Host ip for the webserver          |
 | --web DIR                | Web server root directory          |
-
-## Build
-
-First [Rust](https://www.rust-lang.org/learn/get-started) has to be installed.
-
-**Build & Execute:**
-
-```bash
-cargo run
-```
-
-> For cross compiling with docker see down below.
-
-**Optional arguments:**
-
-```bash
-cargo run -- <args>
-```
-
-> The commandline arguments (`<args>`) are the same as above.
-
-## Docker CI Cross-Compilation
-
-For the 64bit Raspberry Pi 4 and newer.
-
-```bash
-# Build the docker image (only once)
-docker build -t registry.gitlab.com/wrenger/rust-ping-log docker
-# Upload to GitLab CI (optional)
-docker push registry.gitlab.com/wrenger/rust-ping-log
-# Execute locally
-docker run --rm -it --user "$(id -u)":"$(id -g)" \
-    --volume=$(pwd):/home/docker/project -w /home/docker/project \
-    registry.gitlab.com/wrenger/rust-ping-log \
-    cargo build --target=aarch64-unknown-linux-gnu --release
-```
