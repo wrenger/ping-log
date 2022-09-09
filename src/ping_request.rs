@@ -32,7 +32,7 @@ async fn perform_request(host: &str) -> Ping {
 
     let time = Local::now().timestamp();
     let output = Command::new("ping")
-        .args(&[COUNT_ARG, WAIT_ARG, &host])
+        .args([COUNT_ARG, WAIT_ARG, host])
         .output()
         .expect("failed to execute bash 'ping' command");
 
@@ -78,7 +78,7 @@ fn write_request(dir: &Path, log: Ping) -> Result<()> {
     }
 
     let mut file = OpenOptions::new().create(true).append(true).open(path)?;
-    writeln!(file, "{}", log)?;
+    writeln!(file, "{log}")?;
     Ok(())
 }
 

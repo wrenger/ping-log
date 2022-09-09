@@ -7,8 +7,7 @@ repository = "https://gitlab.com/wrenger/rust-ping-log"
 keywords = ["ping", "log", "webserver", "REST"]
 categories = ["webserver"]
 readme = "README.md"
-edition = "2018"
-resolver = "2"
+edition = "2021"
 
 [profile.release]
 opt-level = 3
@@ -17,8 +16,8 @@ lto = "thin"
 [dependencies]
 chrono = "0.4"
 serde = { version = "1.0", features = ["derive"] }
-structopt = "0.3"
-regex = "1.5"
+clap = { version = "3.2", default-features = false, features = ["derive", "std"] }
+regex = "1.6"
 lazy_static = "1.4"
 libc = "0.2"
 tokio = { version = "1", features = ["full"] }

@@ -1,5 +1,9 @@
-import { Chart } from "chart.js";
+import {
+    Chart as ChartJS, LineController, LineElement,
+    PointElement, LinearScale, Title, TimeScale
+} from "chart.js";
 import 'chartjs-adapter-moment';
+
 import React from 'react';
 import { Button } from "@blueprintjs/core";
 import moment from "moment";
@@ -12,8 +16,9 @@ import api from "./api";
 import PingStats from "./PingStats";
 import { iter } from "./iter";
 
-Chart.defaults.color = "#eeeeee";
-Chart.defaults.animation = false;
+ChartJS.register(LineController, LineElement, PointElement, LinearScale, Title, TimeScale);
+ChartJS.defaults.color = "#eeeeee";
+ChartJS.defaults.animation = false;
 
 interface AppProps { }
 

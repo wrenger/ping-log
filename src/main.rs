@@ -9,7 +9,7 @@ use std::path::PathBuf;
 use std::sync::{Arc, RwLock};
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
-use structopt::StructOpt;
+use clap::Parser;
 
 mod hw;
 mod mc;
@@ -19,34 +19,36 @@ mod ping_stats;
 mod server;
 
 /// Command line options
-#[derive(Debug, StructOpt)]
-#[structopt(
+#[derive(Debug, Parser)]
+#[clap(
+    version,
+    author,
     name = "ping-log",
     about = "Simple RESTful webserver for logging and visualizing network access times."
 )]
 struct Opt {
     /// Time between ping requests
-    #[structopt(short, long, default_value = "60")]
+    #[clap(short, long, default_value_t = 60)]
     interval: u64,
 
     /// Address or url of the ping target server
-    #[structopt(short, long, default_value = "1.1.1.1")]
+    #[clap(short, long, default_value = "1.1.1.1")]
     ping_host: String,
 
     /// Filepath to the loggin directory
-    #[structopt(short, long, parse(from_os_str), default_value = "log")]
+    #[clap(short, long, default_value = "log")]
     logs: PathBuf,
 
     /// Filepath to the web directory
-    #[structopt(long, parse(from_os_str), default_value = "ping-view/build")]
+    #[clap(long, default_value = "ping-view/build")]
     web: PathBuf,
 
     /// Address and port of this webserver
-    #[structopt(short, long, default_value = "127.0.0.1:8081")]
+    #[clap(short, long, default_value = "127.0.0.1:8081")]
     web_host: SocketAddr,
 
     /// Address and port of this webserver
-    #[structopt(short, long)]
+    #[clap(short, long)]
     mc_hosts: Vec<String>,
 }
 
