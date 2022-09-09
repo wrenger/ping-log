@@ -8,7 +8,7 @@ permanently inside the network.
 It is built using [Rust](https://www.rust-lang.org/) and the
 [actix](https://actix.rs/) framework.
 
-# Build
+## Build
 
 Install [yarn](https://yarnpkg.com/getting-started/install).
 
@@ -30,14 +30,14 @@ cargo build
 
 > For cross compilation, I would recommend [cross](https://github.com/cross-rs/cross).
 
-# Development
+## Development
 
 Development on the frontend can be done using `yarn start`.
 This automatically reloads the webapp on every change.
 
 > Note that the **server has to be started on port 5000** (`cargo run -- -w 127.0.0.1:5000`) for the yarn proxy to find it.
 
-# Deploy
+## Deploy
 
 After building the frontend and server, both the server binary (`target/release/ping-log`)
 and the build directory for the webapp (`ping-view/build`) have to be deployed.
