@@ -20,41 +20,36 @@ mod server;
 
 /// Command line options
 #[derive(Debug, Parser)]
-#[clap(
-    version,
-    author,
-    name = "ping-log",
-    about = "Simple RESTful webserver for logging and visualizing network access times."
-)]
+#[command(author, version, about)]
 struct Opt {
     /// Time between ping requests
-    #[clap(short, long, default_value_t = 60)]
+    #[arg(short, long, default_value_t = 60)]
     interval: u64,
 
     /// Address or url of the ping target server
-    #[clap(short, long, default_value = "1.1.1.1")]
+    #[arg(short, long, default_value = "1.1.1.1")]
     ping_host: String,
 
     /// Filepath to the loggin directory
-    #[clap(short, long, default_value = "log")]
+    #[arg(short, long, default_value = "log")]
     logs: PathBuf,
 
     /// Filepath to the web directory
-    #[clap(long, default_value = "ping-view/build")]
+    #[arg(long, default_value = "ping-view/build")]
     web: PathBuf,
 
     /// Address and port of this webserver
-    #[clap(short, long, default_value = "127.0.0.1:8081")]
+    #[arg(short, long, default_value = "127.0.0.1:8081")]
     web_host: SocketAddr,
 
     /// Address and port of this webserver
-    #[clap(short, long)]
+    #[arg(short, long)]
     mc_hosts: Vec<String>,
 }
 
 #[tokio::main]
 async fn main() {
-    let opt = Opt::from_args();
+    let opt = Opt::parse();
 
     {
         // Ping reqest thread

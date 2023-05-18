@@ -1,3 +1,4 @@
+use std::io::ErrorKind::InvalidData;
 use std::io::{self, Read, Write};
 use std::net::{TcpStream, ToSocketAddrs};
 use std::sync::RwLock;
@@ -44,7 +45,7 @@ impl Status {
         let response = {
             let mut stream = TcpStream::connect_timeout(&socket_addr, Duration::from_millis(100))?;
             stream.write_all(&[0xfe, 0x01])?;
-            let mut response = vec![0; 256];
+            let mut response = [0; 256];
             let _ = stream.read(&mut response[..])?;
             response
         };
@@ -67,15 +68,15 @@ impl Status {
     ///
     /// see: https://wiki.vg/Server_List_Ping#Client_to_server
     fn parse(addr: &str, response: &[u8]) -> io::Result<Status> {
-        if response.len() <= 3 || response[0] != 0xff {
-            return Err(io::ErrorKind::InvalidData.into());
+        if response.len() <= 3 + 6 || response[0] != 0xff {
+            return Err(InvalidData.into());
         }
 
         let length = u16::from_be_bytes([response[1], response[2]]) as usize;
         let response = &response[3..];
 
         if response.len() < 2 * length {
-            return Err(io::ErrorKind::InvalidData.into());
+            return Err(InvalidData.into());
         }
 
         let response = response[..2 * length]
@@ -83,18 +84,34 @@ impl Status {
             .map(|e| u16::from_be_bytes([e[0], e[1]]))
             .collect::<Vec<_>>();
         let data = String::from_utf16_lossy(&response);
-        let data = data.splitn(6, '\0').collect::<Vec<_>>();
-        if data.len() == 6 {
-            Ok(Status {
-                addr: addr.strip_suffix(":25565").unwrap_or(addr).into(),
-                version: data[2].into(),
-                description: data[3].into(),
-                players: data[4].parse().map_err(|_| io::ErrorKind::InvalidData)?,
-                max_players: data[5].parse().map_err(|_| io::ErrorKind::InvalidData)?,
-            })
-        } else {
-            Err(io::ErrorKind::InvalidData.into())
-        }
+
+        let mut parts = data.split('\0');
+
+        let _ident = parts.next().ok_or(InvalidData)?;
+        let _protocol = parts.next().ok_or(InvalidData)?;
+
+        let version = parts.next().ok_or(InvalidData)?.into();
+        let description = parts.next().ok_or(InvalidData)?.into();
+        let players = parts
+            .next()
+            .ok_or(InvalidData)?
+            .parse()
+            .map_err(|_| InvalidData)?;
+        let max_players = parts
+            .next()
+            .ok_or(InvalidData)?
+            .parse()
+            .map_err(|_| InvalidData)?;
+
+        let addr = addr.strip_suffix(":25565").unwrap_or(addr).into();
+
+        Ok(Status {
+            addr,
+            version,
+            description,
+            players,
+            max_players,
+        })
     }
 
     /// Default status when a server is offline.

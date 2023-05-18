@@ -15,11 +15,22 @@ struct State {
 }
 
 #[derive(Deserialize, Copy, Clone)]
+#[serde(default)]
 struct TimeQuery {
-    offset: Option<usize>,
-    count: Option<usize>,
-    start: Option<i64>,
-    end: Option<i64>,
+    offset: usize,
+    count: usize,
+    start: i64,
+    end: i64,
+}
+impl Default for TimeQuery {
+    fn default() -> Self {
+        Self {
+            offset: 0,
+            count: 60,
+            start: 0,
+            end: 0,
+        }
+    }
 }
 
 /// Starts the ping log webserver on the given `ip`
@@ -29,7 +40,7 @@ pub async fn run(
     web_dir: PathBuf,
     mc_hosts: Arc<RwLock<Vec<mc::Status>>>,
 ) {
-    println!("Ping server is running on {}", ip);
+    println!("Ping server is running on {ip}");
 
     let state = Arc::new(State { log_dir, mc_hosts });
 
@@ -41,10 +52,10 @@ pub async fn run(
         .map(|state: Arc<State>, query: TimeQuery| {
             warp::reply::json(&ping_stats::read_log(
                 &state.log_dir,
-                query.offset.unwrap_or(0),
-                query.count.unwrap_or(60),
-                query.start.unwrap_or(0),
-                query.end.unwrap_or(0),
+                query.offset,
+                query.count,
+                query.start,
+                query.end,
             ))
         });
 

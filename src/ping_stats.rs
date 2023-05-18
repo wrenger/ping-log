@@ -17,7 +17,7 @@ pub fn log_files(dir: &Path) -> Vec<String> {
         files.sort_unstable();
         files
     } else {
-        vec![]
+        Vec::new()
     }
 }
 

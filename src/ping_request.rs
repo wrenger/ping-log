@@ -6,6 +6,7 @@ use std::process::Command;
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
 use chrono::Local;
+use once_cell::sync::Lazy;
 use regex::Regex;
 
 use super::ping::Ping;
@@ -50,12 +51,12 @@ async fn perform_request(host: &str) -> Ping {
 }
 
 fn parse(input: &str) -> f64 {
-    lazy_static::lazy_static! {
-        static ref PING_RE: Regex =  Regex::new(
+    static PING_RE: Lazy<Regex> = Lazy::new(|| {
+        Regex::new(
             r#"^64 bytes from [\w\.\-:]+( \([\w\.\-:]+\))?: icmp_seq=\d+ ttl=\d+ time=([\d.]+) ms"#,
         )
-        .unwrap();
-    }
+        .unwrap()
+    });
 
     if let Some((_, input)) = input.split_once('\n') {
         if let Some(found) = PING_RE.captures(input) {
@@ -70,7 +71,7 @@ fn write_request(dir: &Path, log: Ping) -> Result<()> {
         std::fs::create_dir_all(dir).expect("Error creating log dir");
     }
 
-    let filename = Local::today().format("%y%m%d.txt").to_string();
+    let filename = Local::now().format("%y%m%d.txt").to_string();
     let path = dir.join(filename);
 
     if !path.exists() {
