@@ -70,7 +70,7 @@ export class App extends React.Component<AppProps, AppState> {
     return (
       <div className="App">
         <h1 style={{ textAlign: "center" }}>Ping Log</h1>
-        <div className="container" style={{ maxWidth: "24rem" }}>
+        <div className="container" style={{ maxWidth: "28rem" }}>
           <PingStats {...stats} />
           <MCServers servers={this.state.mcServers} />
         </div>
@@ -78,12 +78,12 @@ export class App extends React.Component<AppProps, AppState> {
           <Pings pings={this.state.pings} />
           <History pings={this.state.pings} />
         </div>
-        <div className="container" style={{ maxWidth: "24rem" }}>
+        <div className="container" style={{ maxWidth: "28rem" }}>
           <Hardware {...this.state.hardware} />
         </div>
         <button
           type="button"
-          className="btn btn-primary btn-sm reload"
+          className="btn btn-primary reload"
           onClick={this.reload.bind(this)}
           title="Refresh"
         >↻</button>
