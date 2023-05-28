@@ -1,16 +1,13 @@
-import React from 'react';
+import * as React from 'react';
 import moment from 'moment';
 import { Line } from 'react-chartjs-2';
 import { ChartOptions } from 'chart.js';
-import { Button, Card, Elevation } from '@blueprintjs/core';
-import { DatePicker } from '@blueprintjs/datetime';
-import { Popover2 } from '@blueprintjs/popover2';
 
 import api from './api';
 import { iter } from './iter';
 
 const HISTORY_CHART_LOG: ChartOptions<"line"> = {
-    aspectRatio: 3,
+    maintainAspectRatio: false,
     scales: {
         ms: {
             type: "linear",
@@ -34,7 +31,7 @@ const HISTORY_CHART_LOG: ChartOptions<"line"> = {
         line: {
             tension: 0, // disables bezier curves
         }
-    }
+    },
 };
 
 interface HistoryProps {
@@ -43,7 +40,6 @@ interface HistoryProps {
 
 interface HistoryState {
     date: Date,
-    isOpen: boolean,
 }
 
 export class History extends React.Component<HistoryProps, HistoryState> {
@@ -51,24 +47,19 @@ export class History extends React.Component<HistoryProps, HistoryState> {
         super(props);
         this.state = {
             date: new Date(),
-            isOpen: false,
         };
     }
 
-    private onDateChange(date: Date, userChange: boolean) {
-        // Sometime the date can be null
-        if (!date) date = this.state.date;
-        this.setState({ date: date, isOpen: !userChange })
-    }
-
-    private dateInteraction(nextOpenState: boolean) {
-        this.setState({ isOpen: nextOpenState })
+    onDateChange(event: React.ChangeEvent<HTMLInputElement>) {
+        console.log(event.target.value);
+        this.setState({ date: new Date(event.target.value) });
     }
 
     render() {
         const day = moment(this.state.date);
         const begin = day.startOf("day").toDate();
         const end = day.endOf("day").toDate();
+        const str = day.format("YYYY-MM-DD");
 
         const pings = iter(this.props.pings.values()).skip(p => p.time > end).take(p => p.time > begin);
         let history: api.HistoryData[] = [...api.statsIter(pings)];
@@ -121,31 +112,26 @@ export class History extends React.Component<HistoryProps, HistoryState> {
         }
 
         return (
-            <Card elevation={Elevation.TWO} className="box">
-                <h5 className="bp4-heading row">
-                    <span className="stretch">Daily</span>
-                    <Popover2
-                        interactionKind="click"
-                        isOpen={this.state.isOpen}
-                        onInteraction={state => this.dateInteraction(state)}
-                        content={
-                            <DatePicker
-                                value={this.state.date}
-                                minDate={moment().subtract(1, "month").toDate()}
-                                maxDate={new Date()}
-                                onChange={(newDate, userChange) => this.onDateChange(newDate, userChange)}
-                            />
-                        }>
-                        <Button
-                            className="bp4-icon-calendar"
-                            text={this.state.date.toLocaleDateString()}
-                        />
-                    </Popover2>
-                </h5>
-                <Line className="chart"
-                    options={HISTORY_CHART_LOG}
-                    data={data} />
-            </Card>
+            <div className="card m-5">
+                <div className="card-header">
+                    <div className="row align-items-center">
+                        <div className="col">
+                            <span>Daily</span>
+                        </div>
+                        <div className="col col-auto">
+                            <input type="date" value={str} onChange={(value) => this.onDateChange(value)} />
+                        </div>
+                    </div>
+                </div>
+                <div className="card-body">
+                    <div className="chart-container">
+                        <Line className="chart"
+                            options={HISTORY_CHART_LOG}
+                            width="100%"
+                            data={data} />
+                    </div>
+                </div>
+            </div>
         );
     }
 }

@@ -2,7 +2,6 @@ import React from 'react';
 import moment from 'moment';
 import { Line } from 'react-chartjs-2';
 import { ChartOptions } from 'chart.js';
-import { Card, Elevation } from '@blueprintjs/core';
 
 import api from "./api";
 import { iter } from './iter';
@@ -12,7 +11,7 @@ interface PingsProps {
 }
 
 const RECENT_CHART_OPTIONS: ChartOptions<"line"> = {
-    aspectRatio: 3,
+    maintainAspectRatio: false,
     scales: {
         ms: {
             type: "linear",
@@ -85,12 +84,16 @@ export class Pings extends React.Component<PingsProps> {
         };
 
         return (
-            <Card elevation={Elevation.TWO} className="box">
-                <h5 className="bp4-heading">Recent</h5>
-                <Line className="chart"
-                    options={RECENT_CHART_OPTIONS}
-                    data={data} />
-            </Card>
+            <div className="card m-5">
+                <div className="card-header">Recent</div>
+                <div className="card-body">
+                    <div className="chart-container">
+                        <Line className="chart"
+                            options={RECENT_CHART_OPTIONS}
+                            data={data} />
+                    </div>
+                </div>
+            </div>
         );
     }
 }
