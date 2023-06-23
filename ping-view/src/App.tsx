@@ -1,10 +1,3 @@
-import {
-  Chart as ChartJS, LineController, LineElement,
-  PointElement, LinearScale, Title, TimeScale,
-  Tooltip, Legend,
-} from "chart.js";
-import 'chartjs-adapter-moment';
-
 import * as React from 'react';
 
 import api from "./api";
@@ -15,14 +8,6 @@ import PingStats from "./PingStats";
 import { Pings } from "./Pings";
 import { MCServers } from "./MCServers";
 import { History } from "./History";
-
-ChartJS.register(
-  LineController, LineElement, PointElement, LinearScale,
-  Legend, Title, TimeScale, Tooltip,
-);
-ChartJS.defaults.color = "#eeeeee";
-ChartJS.defaults.animation = false;
-
 
 interface AppProps { }
 

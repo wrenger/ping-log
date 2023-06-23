@@ -10,6 +10,8 @@ $enable-rfs: false;
 $enable-transitions: false;
 $enable-validation-icons: false;
 
+$color-mode-type: media-query;
+
 // 3. Include remainder of required Bootstrap stylesheets
 @import "../node_modules/bootstrap/scss/variables";
 @import "../node_modules/bootstrap/scss/variables-dark";
@@ -55,7 +57,7 @@ body,
 html {
     margin: 0;
     padding: 0;
-    background-color: $black;
+    background-color: var(--bs-dark-bg-subtle);
 }
 
 .reload {
@@ -82,8 +84,8 @@ td.td-label {
 
 .chart-container {
     position: relative;
-    height: 25vw;
-    min-height: 200px;
+    height: 25vw !important;
+    min-height: 200px !important;
 }
 
 @mixin color-scheme($name) {

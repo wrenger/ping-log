@@ -19,7 +19,7 @@ export class Hardware extends React.Component<api.HardwareData> {
                                 <td>{this.props.memory_used.toPrecision(3)} / {this.props.memory_total.toPrecision(3)} GB</td>
                             </tr>
                             <tr>
-                                <td className="td-label text-secondary">Temparature: </td>
+                                <td className="td-label text-secondary">Temperature: </td>
                                 <td>{this.props.temperature.toPrecision(3)}°</td>
                             </tr>
                         </tbody>
