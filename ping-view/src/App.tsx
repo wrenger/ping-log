@@ -2,7 +2,6 @@ import * as React from 'react';
 
 import api from "./api";
 import moment from "moment";
-import { iter } from "./iter";
 import { Hardware } from "./Hardware";
 import PingStats from "./PingStats";
 import { Pings } from "./Pings";
@@ -49,8 +48,10 @@ export class App extends React.Component<AppProps, AppState> {
   }
 
   render() {
+    const pings = this.state.pings;
     const until = moment().subtract(1, "hour").toDate();
-    const stats = api.stats(until, iter(this.state.pings.values()).take(p => p.time > until));
+    const untilIdx = pings.findIndex(p => p.time <= until);
+    const stats = api.stats(until, pings.slice(0, untilIdx).map(p => p.ping));
 
     return (
       <div className="App">
@@ -60,8 +61,8 @@ export class App extends React.Component<AppProps, AppState> {
           <MCServers servers={this.state.mcServers} />
         </div>
         <div className="container">
-          <Pings pings={this.state.pings} />
-          <History pings={this.state.pings} />
+          <Pings pings={pings} />
+          <History pings={pings} />
         </div>
         <div className="container" style={{ maxWidth: "28rem" }}>
           <Hardware {...this.state.hardware} />

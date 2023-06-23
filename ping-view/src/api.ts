@@ -1,5 +1,4 @@
 import moment from "moment";
-import { PeekableIterator } from "./iter";
 
 namespace api {
     const API_LOG = "/api/pings";
@@ -77,37 +76,32 @@ namespace api {
     }
 
     /** Compute the combined statistic for all pings before the given time. */
-    export function stats(time: Date, pings: PeekableIterator<PingData>): HistoryData {
+    export function stats(time: Date, pings: number[]): HistoryData {
         let min = 1000.0;
         let max = 0.0;
         let sum = 0.0;
         let lost = 0.0;
-        let count = 0;
+        let count = pings.length;
 
-        while (!pings.peek().done && pings.peek().value.time > time) {
-            let entry = pings.peek().value;
-
-            if (entry.ping < min) {
-                min = entry.ping;
+        for (const ping of pings) {
+            if (ping < min) {
+                min = ping;
             }
-            if (entry.ping >= 1000.0) {
+            if (ping >= 1000.0) {
                 lost += 1.0;
             } else {
-                if (entry.ping > max) {
-                    max = entry.ping;
+                if (ping > max) {
+                    max = ping;
                 }
-                sum += entry.ping;
+                sum += ping;
             }
-            count += 1;
-
-            pings.next();
         }
 
         let avg = Math.round(1000.0 * sum / (count - lost)) / 1000.0;
         lost = Math.round(1000.0 * lost / count) / 1000.0;
 
         return {
-            time: moment(time).add(1, "hour").toDate(),
+            time: time,
             min: min >= 1000.0 ? 0.0 : min,
             max: max <= 0.0 ? 0.0 : max,
             avg: isNaN(avg) ? 0.0 : avg,
@@ -116,17 +110,42 @@ namespace api {
         };
     }
 
-    /** Compute the hourly statistics for all pings. */
-    export function* statsIter(pings: PeekableIterator<PingData>): Generator<HistoryData> {
-        let first = pings.peek();
-        if (first.done) return;
+    function group<T, K, V>(arr: T[], f: (e: T) => [K, V]): [K, V[]][] {
+        let out: [K, V[]][] = [];
+        for (const e of arr) {
+            const [k, v] = f(e);
+            let last = out.at(-1);
+            if (last !== undefined && last[0] === k) {
+                last[1].push(v);
+            } else {
+                out.push([k, [v]]);
+            }
 
-        let current = moment(first.value.time).startOf("hour");
-        while (!pings.peek().done) {
-            let until = current.toDate();
-            yield stats(until, pings);
-            current = current.subtract(1, "hour");
         }
+        return out;
+    }
+
+    export function statsArray(pings: PingData[]): HistoryData[] {
+        let chunks = group(pings, p => [moment(p.time).startOf("hour").toDate().getTime(), p.ping]);
+        let out: HistoryData[] = []
+
+        if (chunks.length > 0) {
+            let i = 0;
+            let time = new Date(chunks[0][0]);
+            // Fill non-existing hours with 0
+            while (i < chunks.length) {
+                let [t, chunk] = chunks[i];
+                if (t >= time.getTime()) {
+                    out.push(stats(time, chunk));
+                    i += 1;
+                } else {
+                    out.push({ time: time, min: 0, max: 0, avg: 0, lost: 0, count: 0 });
+                }
+                time = moment(time).subtract(1, "hour").toDate();
+            }
+        }
+
+        return out;
     }
 }
 

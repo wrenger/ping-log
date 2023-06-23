@@ -3,7 +3,6 @@ import moment from 'moment';
 import { LineChart, Line, CartesianGrid, XAxis, YAxis, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 
 import api from './api';
-import { iter } from './iter';
 
 interface HistoryProps {
     pings: api.PingData[],
@@ -31,8 +30,12 @@ export class History extends React.Component<HistoryProps, HistoryState> {
         const end = day.endOf("day").toDate();
         const str = day.format("YYYY-MM-DD");
 
-        const pings = iter(this.props.pings.values()).skip(p => p.time > end).take(p => p.time > begin);
-        let history: api.HistoryData[] = [...api.statsIter(pings)];
+        let pingsBegin = this.props.pings.findIndex(p => p.time < end);
+        if (pingsBegin < 0) pingsBegin = 0;
+        let pingsEnd = this.props.pings.findIndex(p => p.time < begin);
+        const pings = this.props.pings.slice(pingsBegin, pingsEnd);
+
+        let history = api.statsArray(pings);
         history.reverse();
 
         return (

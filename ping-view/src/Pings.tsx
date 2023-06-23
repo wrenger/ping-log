@@ -2,7 +2,6 @@ import React from 'react';
 import moment from 'moment';
 import { CartesianGrid, Legend, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 
-import { iter } from './iter';
 import api from "./api";
 
 interface PingsProps {
@@ -12,7 +11,8 @@ interface PingsProps {
 export class Pings extends React.Component<PingsProps> {
     render() {
         const until = moment().subtract(1, "hour").toDate();
-        let pings = [...iter(this.props.pings.values()).take(p => p.time > until)];
+        const untilIdx = this.props.pings.findIndex(p => p.time < until);
+        let pings = this.props.pings.slice(0, untilIdx);
 
         pings.reverse();
         const data = pings.map((e) => {
