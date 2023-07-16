@@ -8,75 +8,56 @@ import { Pings } from "./Pings";
 import { MCServers } from "./MCServers";
 import { History } from "./History";
 
-interface AppProps { }
+export default function App() {
+  const [pings, setPings] = React.useState<api.PingData[]>([]);
+  const [mcServers, setMcServers] = React.useState<api.MCServer[]>([]);
+  const [hardware, setHardware] = React.useState<api.HardwareData>(
+    { load: 0, memory_used: 0, memory_total: 0, temperature: 0 });
 
-interface AppState {
-  pings: api.PingData[],
-  mcServers: api.MCServer[],
-  hardware: api.HardwareData,
-}
+  var loading = false;
 
-export class App extends React.Component<AppProps, AppState> {
+  async function reload() {
+    if (loading) return;
 
-  constructor(props: AppProps) {
-    super(props);
-
-    this.state = {
-      pings: [],
-      mcServers: [],
-      hardware: { load: 0, memory_used: 0, memory_total: 0, temperature: 0 },
-    }
-  }
-
-  async reload() {
-    let [pings, mcServers, hardware] = await Promise.all([
+    loading = true;
+    let [p, m, h] = await Promise.all([
       api.pings(new Date(), moment().subtract(1, "month").startOf("day").toDate(), 32 * 24 * 60),
       api.mcServers(),
       api.hardware(),
     ]);
 
-    this.setState({
-      pings: pings,
-      mcServers: mcServers,
-      hardware: hardware,
-    })
+    setPings(p);
+    setMcServers(m);
+    setHardware(h);
+    loading = false;
   }
 
-  componentDidMount() {
-    this.reload();
-    setInterval(this.reload.bind(this), 30000);
-  }
+  React.useEffect(() => {
+    reload();
+    let timer = setInterval(() => { reload(); }, 30000);
+    return () => clearInterval(timer);
+    // eslint-disable-next-line
+  }, []);
 
-  render() {
-    const pings = this.state.pings;
-    const until = moment().subtract(1, "hour").toDate();
-    const untilIdx = pings.findIndex(p => p.time <= until);
-    const stats = api.stats(until, pings.slice(0, untilIdx).map(p => p.ping));
+  const until = moment().subtract(1, "hour").toDate();
+  const untilIdx = pings.findIndex(p => p.time <= until);
+  const stats = api.stats(until, pings.slice(0, untilIdx).map(p => p.ping));
 
-    return (
-      <div className="App">
-        <h1 style={{ textAlign: "center" }}>Ping Log</h1>
-        <div className="container" style={{ maxWidth: "28rem" }}>
-          <PingStats {...stats} />
-          <MCServers servers={this.state.mcServers} />
-        </div>
-        <div className="container">
-          <Pings pings={pings} />
-          <History pings={pings} />
-        </div>
-        <div className="container" style={{ maxWidth: "28rem" }}>
-          <Hardware {...this.state.hardware} />
-        </div>
-        <button
-          type="button"
-          className="btn btn-primary reload"
-          onClick={this.reload.bind(this)}
-          title="Refresh"
-        >↻</button>
+  return (
+    <div className="App">
+      <h1 style={{ textAlign: "center" }}>Ping Log</h1>
+      <div className="container" style={{ maxWidth: "28rem" }}>
+        <PingStats {...stats} />
+        <MCServers servers={mcServers} />
       </div>
-    );
-  }
+      <div className="container">
+        <Pings pings={pings} />
+        <History pings={pings} />
+      </div>
+      <div className="container" style={{ maxWidth: "28rem" }}>
+        <Hardware {...hardware} />
+      </div>
+      <button type="button" className="btn btn-primary reload" onClick={reload} title="Refresh">↻</button>
+    </div>
+  );
 }
-
-
-export default App;
