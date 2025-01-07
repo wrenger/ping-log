@@ -1,17 +1,30 @@
 use std::net::SocketAddr;
 use std::path::PathBuf;
 use std::sync::{Arc, RwLock};
+use std::time::Duration;
 
+use axum::body::Body;
+use axum::error_handling::HandleErrorLayer;
+use axum::extract::{Json, Query, State};
+use axum::http::{Request, StatusCode};
+use axum::response::IntoResponse;
+use axum::routing::get;
+use axum::BoxError;
 use serde::Deserialize;
-use warp::Filter;
+use tower::{ServiceBuilder, ServiceExt};
+use tower_http::compression::CompressionLayer;
+use tower_http::services::{ServeDir, ServeFile};
+use tower_http::trace::TraceLayer;
+use tracing::error;
 
 use super::hw;
 use super::mc;
 use super::ping_stats;
 
-struct State {
+struct AppState {
     log_dir: PathBuf,
     mc_hosts: Arc<RwLock<Vec<mc::Status>>>,
+    web_dir: PathBuf,
 }
 
 #[derive(Deserialize, Copy, Clone)]
@@ -32,7 +45,6 @@ impl Default for TimeQuery {
         }
     }
 }
-
 /// Starts the ping log webserver on the given `ip`
 pub async fn run(
     ip: SocketAddr,
@@ -42,41 +54,69 @@ pub async fn run(
 ) {
     println!("Ping server is running on {ip}");
 
-    let state = Arc::new(State { log_dir, mc_hosts });
+    let app = axum::Router::new()
+        .route("/api/pings", get(handle_pings))
+        .route("/api/hw", get(handle_hw))
+        .route("/api/mc", get(handle_mc))
+        .route("/", get(serve_index))
+        .fallback_service(ServeDir::new(&web_dir))
+        .layer(
+            ServiceBuilder::new()
+                .layer(CompressionLayer::new())
+                .layer(HandleErrorLayer::new(error_handler))
+                .timeout(Duration::from_secs(10))
+                .layer(TraceLayer::new_for_http())
+                .into_inner(),
+        )
+        .with_state(Arc::new(AppState {
+            log_dir,
+            mc_hosts,
+            web_dir,
+        }));
 
-    let with_state = warp::any().map(move || state.clone());
+    axum::serve(tokio::net::TcpListener::bind(ip).await.unwrap(), app)
+        .await
+        .unwrap();
+}
 
-    let pings = warp::path("pings")
-        .and(with_state.clone())
-        .and(warp::query::<TimeQuery>())
-        .map(|state: Arc<State>, query: TimeQuery| {
-            warp::reply::json(&ping_stats::read_log(
-                &state.log_dir,
-                query.offset,
-                query.count,
-                query.start,
-                query.end,
-            ))
-        });
+async fn error_handler(error: BoxError) -> StatusCode {
+    if error.is::<tower::timeout::error::Elapsed>() {
+        StatusCode::REQUEST_TIMEOUT
+    } else {
+        error!("Internal server error: {error}");
+        StatusCode::INTERNAL_SERVER_ERROR
+    }
+}
 
-    let hw = warp::path("hw").map(|| warp::reply::json(&hw::Status::request()));
+async fn handle_pings(
+    State(state): State<Arc<AppState>>,
+    Query(query): Query<TimeQuery>,
+) -> Json<Vec<super::ping::Ping>> {
+    Json(ping_stats::read_log(
+        &state.log_dir,
+        query.offset,
+        query.count,
+        query.start,
+        query.end,
+    ))
+}
 
-    let mc = warp::path("mc")
-        .and(with_state.clone())
-        .map(|state: Arc<State>| {
-            let mc_state = state.mc_hosts.read().unwrap();
-            warp::reply::json(&*mc_state)
-        });
+async fn handle_hw() -> Json<hw::Status> {
+    Json(hw::Status::request())
+}
 
-    let api = warp::path("api").and(pings.or(hw).or(mc));
+async fn handle_mc(State(state): State<Arc<AppState>>) -> Json<Vec<mc::Status>> {
+    let mc_state = state.mc_hosts.read().unwrap();
+    Json(mc_state.clone())
+}
 
-    let index = warp::get()
-        .and(warp::path::end())
-        .and(warp::fs::file(web_dir.join("index.html")));
-
-    let routes = warp::get()
-        .and(index.or(api).or(warp::fs::dir(web_dir)))
-        .with(warp::compression::gzip());
-
-    warp::serve(routes).run(ip).await
+async fn serve_index(
+    State(state): State<Arc<AppState>>,
+    req: Request<Body>,
+) -> impl axum::response::IntoResponse {
+    ServeFile::new(state.web_dir.join("index.html"))
+        .oneshot(req)
+        .await
+        .unwrap()
+        .into_response()
 }

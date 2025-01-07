@@ -3,10 +3,10 @@ use std::fs::{read_dir, remove_file};
 use std::io::{Result, Write};
 use std::path::Path;
 use std::process::Command;
+use std::sync::LazyLock;
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
 use chrono::Local;
-use once_cell::sync::Lazy;
 use regex::Regex;
 
 use super::ping::Ping;
@@ -51,7 +51,7 @@ async fn perform_request(host: &str) -> Ping {
 }
 
 fn parse(input: &str) -> f64 {
-    static PING_RE: Lazy<Regex> = Lazy::new(|| {
+    static PING_RE: LazyLock<Regex> = LazyLock::new(|| {
         Regex::new(
             r#"^64 bytes from [\w\.\-:]+( \([\w\.\-:]+\))?: icmp_seq=\d+ ttl=\d+ time=([\d.]+) ms"#,
         )

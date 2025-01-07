@@ -1,3 +1,5 @@
+use tracing::error;
+
 use super::ping::Ping;
 
 use std::fs::{self, read_dir};
@@ -57,7 +59,7 @@ fn read_log_file(log_dir: &Path, file: &Path) -> Vec<Ping> {
     if let Ok(input) = fs::read_to_string(&filename) {
         parse(&input)
     } else {
-        eprintln!("Error opening file {:?}\n", &filename);
+        error!("Error opening file {:?}\n", filename);
         Vec::new()
     }
 }

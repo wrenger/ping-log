@@ -1,6 +1,7 @@
 use std::fs;
 
 use serde::Serialize;
+use tracing::error;
 
 /// Path to the HWMON device file with the CPU temperature
 const TEMPERATURE_FILE: &str = "/sys/class/thermal/thermal_zone0/temp";
@@ -30,7 +31,7 @@ impl Status {
                 (sysinfo.totalram >> 20) as f32 / 1024.0,
             )
         } else {
-            eprintln!("Error reading sysinfo");
+            error!("Error reading sysinfo");
             (0.0, 0.0, 0.0)
         };
 

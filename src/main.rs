@@ -21,7 +21,7 @@ mod server;
 /// Command line options
 #[derive(Debug, Parser)]
 #[command(author, version, about)]
-struct Opt {
+struct Args {
     /// Time between ping requests
     #[arg(short, long, default_value_t = 60)]
     interval: u64,
@@ -49,22 +49,24 @@ struct Opt {
 
 #[tokio::main]
 async fn main() {
-    let opt = Opt::parse();
+    tracing_subscriber::fmt::init();
+
+    let args = Args::parse();
 
     {
         // Ping reqest thread
-        let log_dir = opt.logs.clone();
-        let interval = opt.interval;
-        let ping_host = opt.ping_host;
+        let log_dir = args.logs.clone();
+        let interval = args.interval;
+        let ping_host = args.ping_host;
 
         tokio::spawn(async move { ping_request::monitor(&ping_host, interval, &log_dir).await });
     };
 
     let mc_state = Arc::new(RwLock::new(Vec::new()));
-    if !opt.mc_hosts.is_empty() {
+    if !args.mc_hosts.is_empty() {
         // Server status thread
-        let interval = opt.interval;
-        let mc_hosts = opt.mc_hosts.clone();
+        let interval = args.interval;
+        let mc_hosts = args.mc_hosts.clone();
         let mc_state = mc_state.clone();
 
         tokio::spawn(async move {
@@ -79,5 +81,5 @@ async fn main() {
             }
         });
     };
-    server::run(opt.web_host, opt.logs, opt.web, mc_state).await
+    server::run(args.web_host, args.logs, args.web, mc_state).await
 }
