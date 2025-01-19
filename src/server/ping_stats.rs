@@ -1,12 +1,31 @@
 use tracing::error;
 
-use super::ping::Ping;
+use crate::components::stats::PingStats;
+use crate::ping::Ping;
 
 use std::fs::{self, read_dir};
 use std::path::Path;
 
-fn is_log_file(name: &str) -> bool {
-    name.len() == 10 && name.ends_with(".txt") && name[0..6].chars().all(char::is_numeric)
+pub fn accumulate(pings: &[Ping], time: i64) -> PingStats {
+    let mut stats = pings.into_iter().fold(
+        PingStats {
+            time,
+            min: f64::MAX,
+            ..PingStats::default()
+        },
+        |mut stats, ping| {
+            if ping.ping < 1000.0 {
+                stats.avg += ping.ping;
+                stats.max = stats.max.max(ping.ping);
+                stats.min = stats.min.min(ping.ping);
+            }
+            stats.lost += (ping.ping > 1000.0) as usize;
+            stats.count += 1;
+            stats
+        },
+    );
+    stats.avg /= stats.count as f64;
+    stats
 }
 
 /// Returns the filenames of the log files in alphabetical order
@@ -24,7 +43,7 @@ pub fn log_files(dir: &Path) -> Vec<String> {
 }
 
 /// Parses the log files and returns the pings for the given range
-/// As the output is reversed and begins with the newest timestamp,
+/// as the output is reversed and begins with the newest timestamp,
 /// `start` has to be larger (after) than `end`.
 pub fn read_log<P: AsRef<Path>>(
     log_dir: P,
@@ -72,6 +91,10 @@ fn parse(input: &str) -> Vec<Ping> {
         .unwrap_or_default();
     result.reverse();
     result
+}
+
+fn is_log_file(name: &str) -> bool {
+    name.len() == 10 && name.ends_with(".txt") && name[0..6].chars().all(char::is_numeric)
 }
 
 #[cfg(test)]

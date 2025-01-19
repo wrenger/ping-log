@@ -5,54 +5,59 @@ host.
 It is designed for a Raspberry Pi or other Unix-based IoT device running
 permanently inside the network.
 
-It is built using [Rust](https://www.rust-lang.org/) and the
-[actix](https://actix.rs/) framework.
+It is built using [Rust](https://www.rust-lang.org) and the
+[Dioxus](https://dioxuslabs.com) framework.
 
 ## Build
 
-Install [yarn](https://yarnpkg.com/getting-started/install).
-
-**Building the front end:**
-
-```
-cd ping-view
-yarn install
-yarn build
-```
-
 Install [Rust](https://www.rust-lang.org/learn/get-started).
+
+Install the [dioxus-cli](https://crates.io/crates/dioxus-cli):
+
+```sh
+cargo install dioxus-cli
+```
 
 **Build & execute the server:**
 
-```bash
-cargo build
+```sh
+dx build -r
 ```
 
+The server and ressources are stored under `target/dx/ping-log/release/web`.
+
 > For cross compilation, I would recommend [cross](https://github.com/cross-rs/cross).
+>
+> ```sh
+> cross build --target aarch64-unknown-linux-musl -r -Fserver
+> ```
 
 ## Development
 
-Development on the frontend can be done using `yarn start`.
-This automatically reloads the webapp on every change.
+This project includes basic organization with an organized `assets` folder and a `src/components` folder.
 
-> Note that the **server has to be started on port 5000** (`cargo run -- -w 127.0.0.1:5000`) for the yarn proxy to find it.
+### Tailwind
+1. Install npm: https://docs.npmjs.com/downloading-and-installing-node-js-and-npm
+2. Install the Tailwind CSS CLI: https://tailwindcss.com/docs/installation
+3. Run the following command in the root of the project to start the Tailwind CSS compiler:
 
-## Deploy
+```sh
+npx tailwindcss -i ./input.css -o ./assets/tailwind.css --watch
+```
 
-After building the frontend and server, both the server binary (`target/release/ping-log`)
-and the build directory for the webapp (`ping-view/build`) have to be deployed.
+### Serving Your App
 
-If the location of the frontend build directory is different on the target system,
-use the `--web` argument of the server to configure it.
+Run the following command in the root of your project to start developing with the default platform:
 
+```sh
+dx serve
+```
 
 **CLI arguments:**
 
-```bash
-# with cargo
-cargo run -r -- <args>
-# or after building & deployment
-<path/to>/ping-log <args>
+```sh
+# after building & deployment (dx build -r)
+./target/dx/ping-log/release/web/server <args>
 ```
 
 The commandline arguments are:

@@ -1,49 +1,70 @@
 [package]
 name = "ping-log"
-version = "0.4.2"
+version = "0.1.0"
 authors = ["Lars Wrenger <lars@wrenger.net>"]
-description = "Simple RESTful webserver for logging and visualizing network access times."
-repository = "https://gitlab.com/wrenger/rust-ping-log"
-keywords = ["ping", "log", "webserver", "REST"]
-categories = ["webserver"]
-readme = "README.md"
 edition = "2021"
 
-[profile.release]
-opt-level = 3
-lto = "thin"
-
 [dependencies]
-axum = { version = "0.8.1", default-features = false, features = [
-    "http1",
+chrono = { version = "0.4", features = ["serde"] }
+dioxus = { version = "0.6", features = ["fullstack", "logger"] }
+regex = "1.11"
+serde = { version = "1.0", features = ["derive"] }
+tokio = { version = "1", features = ["sync", "time", "macros"] }
+tracing = "0.1"
+
+# Web only
+gloo-timers = { version="0.3", features = ["futures"], optional = true }
+
+# Server only
+axum = { version = "0.7", optional = true, default-features = false, features = [
     "json",
     "query",
     "tokio",
     "tower-log",
     "tracing",
 ] }
-chrono = "0.4"
 clap = { version = "4.5", default-features = false, features = [
     "derive",
     "std",
     "help",
     "usage",
-] }
-libc = "0.2"
-regex = "1.11"
-serde = { version = "1.0", features = ["derive"] }
-tokio = { version = "1.42", features = [
-    "fs",
-    "sync",
-    "time",
-    "macros",
-    "rt-multi-thread",
-] }
-tower = { version = "0.5", features = ["util", "timeout"] }
-tower-http = { version = "0.6", features = [
-    "fs",
-    "trace",
-    "compression-deflate",
-] }
-tracing = "0.1"
-tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+], optional = true }
+dioxus-cli-config = { version = "0.6", optional = true }
+libc = { version = "0.2", optional = true }
+
+[features]
+default = []
+web = [
+    "dioxus/web",
+    "dep:gloo-timers",
+]
+server = [
+    "dioxus/server",
+    "dep:dioxus-cli-config",
+    "dep:axum",
+    "dep:libc",
+    "dep:clap",
+    "tokio/rt-multi-thread",
+    "tokio/fs",
+]
+
+[profile]
+
+[profile.release]
+opt-level = "z"
+debug = false
+lto = true
+codegen-units = 1
+panic = "abort"
+strip = true
+incremental = false
+
+[profile.wasm-dev]
+inherits = "dev"
+opt-level = 1
+
+[profile.server-dev]
+inherits = "dev"
+
+[profile.android-dev]
+inherits = "dev"

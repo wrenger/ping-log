@@ -1,0 +1,28 @@
+[application]
+
+# App (Project) Name
+name = "ping-log"
+
+[web.app]
+
+# HTML title tag content
+title = "ping-log"
+
+[web.wasm_opt]
+level = "z"
+debug = false
+
+# include `assets` in web platform
+[web.resource]
+
+# Additional CSS style files
+style = []
+
+# Additional JavaScript files
+script = []
+
+[web.resource.dev]
+
+# Javascript code file
+# serve: [dev-server] only
+script = []

@@ -8,8 +8,11 @@ use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
 use chrono::Local;
 use regex::Regex;
+use tracing::info;
 
-use super::ping::Ping;
+use crate::components::history::LOG_DURATION;
+use crate::ping::Ping;
+
 
 pub async fn monitor(host: &str, interval: u64, log_dir: &Path) {
     loop {
@@ -19,6 +22,7 @@ pub async fn monitor(host: &str, interval: u64, log_dir: &Path) {
         tokio::time::sleep(next - epoch).await;
 
         let log = perform_request(host).await;
+        info!("Ping: {}", log);
         write_request(log_dir, log).expect("write log error");
     }
 }
@@ -84,7 +88,7 @@ fn write_request(dir: &Path, log: Ping) -> Result<()> {
 }
 
 fn remove_old_logs(dir: &Path) {
-    let oldest = Local::now() - chrono::Duration::weeks(8);
+    let oldest = Local::now() - LOG_DURATION;
     let oldest = oldest.format("%y%m%d").to_string();
 
     if let Ok(entries) = read_dir(dir) {

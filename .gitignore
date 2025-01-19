@@ -10,3 +10,7 @@
 Cargo.lock
 /target/
 **/*.rs.bk
+
+# Node.js
+node_modules/
+package-lock.json
