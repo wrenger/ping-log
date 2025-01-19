@@ -8,7 +8,6 @@ use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
 use chrono::Local;
 use regex::Regex;
-use tracing::info;
 
 use crate::components::history::LOG_DURATION;
 use crate::ping::Ping;
@@ -22,7 +21,6 @@ pub async fn monitor(host: &str, interval: u64, log_dir: &Path) {
         tokio::time::sleep(next - epoch).await;
 
         let log = perform_request(host).await;
-        info!("Ping: {}", log);
         write_request(log_dir, log).expect("write log error");
     }
 }

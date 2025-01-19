@@ -15,6 +15,7 @@ use components::recent::RecentRecent;
 use components::stats::{PingStats, Stats};
 use dioxus::prelude::*;
 use ping::Ping;
+use server_fn::codec::GetUrl;
 use util::sleep;
 
 mod components;
@@ -65,6 +66,7 @@ fn main() {
 async fn main() {
     dioxus::logger::initialize_default();
     use dioxus::fullstack::UnableToLoadIndex;
+    use tower_http::compression::CompressionLayer;
     use tracing::warn;
 
     let args = Args::parse();
@@ -111,7 +113,9 @@ async fn main() {
         }
     }
 
-    let router = axum::Router::new().serve_dioxus_application(TryIntoResult(config), App);
+    let router = axum::Router::new()
+        .serve_dioxus_application(TryIntoResult(config), App)
+        .layer(CompressionLayer::new());
     let router = router.into_make_service();
     let listener = tokio::net::TcpListener::bind(address).await.unwrap();
 
@@ -126,28 +130,35 @@ async fn main() {
     axum::serve(listener, router).await.unwrap();
 }
 
-const FAVICON: Asset = asset!("/assets/favicon.ico");
+const FAVICON: Asset = asset!("/assets/favicon.png");
 const TAILWIND_CSS: Asset = asset!("/assets/tailwind.css");
 
 #[component]
 fn App() -> Element {
-    let mut stats = use_signal(|| PingStats::default());
-    let mut hw = use_signal(|| HardwareProps::default());
-    let mut pings = use_signal(|| vec![]);
+    let mut reload = use_signal(|| 0);
+    let recent = use_server_future(move || {
+        reload(); // Respond to reload
+        async move {
+            let now = chrono::Local::now().timestamp();
+            get_recent(0, 60, now, now - 60 * 60)
+                .await
+                .unwrap_or_default()
+        }
+    })?;
+    let hw = use_server_future(move || {
+        reload(); // Respond to reload
+        async move { get_hw_status().await.unwrap_or_default() }
+    })?;
 
     use_future(move || async move {
         loop {
-            if let Ok(s) = get_hw_status().await {
-                hw.set(s);
-            }
-            let now = chrono::Local::now().timestamp();
-            if let Ok((s, p)) = get_recent(0, 60, now, now - 60 * 60).await {
-                stats.set(s);
-                pings.set(p);
-            }
             sleep(Duration::from_secs(30)).await;
+            reload.set(0); // Trigger reload
         }
     });
+
+    let (stats, pings) = recent().unwrap_or_default();
+    let hw = hw().unwrap_or_default();
 
     rsx! {
         document::Link { rel: "icon", href: FAVICON }
@@ -161,18 +172,18 @@ fn App() -> Element {
                 }
             }
 
-            Stats { stats: stats() }
+            Stats { stats }
 
-            RecentRecent { pings: pings() }
+            RecentRecent { pings }
 
             PingHistory { }
 
-            Hardware { ..hw() }
+            Hardware { ..hw }
         }
     }
 }
 
-#[server]
+#[server(endpoint = "/recent", input = GetUrl)]
 async fn get_recent(
     offset: usize,
     count: usize,
@@ -186,7 +197,7 @@ async fn get_recent(
     Ok((stats, logs))
 }
 
-#[server]
+#[server(endpoint = "/hw", input = GetUrl)]
 async fn get_hw_status() -> Result<HardwareProps, ServerFnError> {
     Ok(server::hw::request())
 }

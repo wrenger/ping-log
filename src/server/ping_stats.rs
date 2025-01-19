@@ -19,7 +19,7 @@ pub fn accumulate(pings: &[Ping], time: i64) -> PingStats {
                 stats.max = stats.max.max(ping.ping);
                 stats.min = stats.min.min(ping.ping);
             }
-            stats.lost += (ping.ping > 1000.0) as usize;
+            stats.lost += (ping.ping >= 1000.0) as usize;
             stats.count += 1;
             stats
         },

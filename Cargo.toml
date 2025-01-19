@@ -13,16 +13,19 @@ tokio = { version = "1", features = ["sync", "time", "macros"] }
 tracing = "0.1"
 
 # Web only
-gloo-timers = { version="0.3", features = ["futures"], optional = true }
+gloo-timers = { version = "0.3", features = ["futures"], optional = true }
 
 # Server only
-axum = { version = "0.7", optional = true, default-features = false, features = [
+axum = { version = "0.7", default-features = false, features = [
     "json",
     "query",
     "tokio",
     "tower-log",
     "tracing",
-] }
+], optional = true }
+tower-http = { version = "0.5", features = [
+    "compression-deflate",
+], optional = true }
 clap = { version = "4.5", default-features = false, features = [
     "derive",
     "std",
@@ -34,14 +37,12 @@ libc = { version = "0.2", optional = true }
 
 [features]
 default = []
-web = [
-    "dioxus/web",
-    "dep:gloo-timers",
-]
+web = ["dioxus/web", "dep:gloo-timers"]
 server = [
     "dioxus/server",
     "dep:dioxus-cli-config",
     "dep:axum",
+    "dep:tower-http",
     "dep:libc",
     "dep:clap",
     "tokio/rt-multi-thread",
@@ -55,9 +56,12 @@ opt-level = "z"
 debug = false
 lto = true
 codegen-units = 1
-panic = "abort"
 strip = true
 incremental = false
+
+[profile.wasm-release]
+inherits = "release"
+panic = "abort"
 
 [profile.wasm-dev]
 inherits = "dev"

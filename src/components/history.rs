@@ -3,6 +3,7 @@ use std::time::Duration;
 use chrono::offset::LocalResult;
 use chrono::{Local, NaiveDate, NaiveDateTime, TimeZone};
 use dioxus::prelude::*;
+use server_fn::codec::GetUrl;
 
 use crate::components::line_plot::{Line, LinePlot};
 use crate::util::sleep;
@@ -14,7 +15,13 @@ pub const LOG_DURATION: chrono::Duration = chrono::Duration::weeks(8);
 #[component]
 pub fn PingHistory() -> Element {
     let mut date = use_signal(|| Local::now().format("%Y-%m-%d").to_string());
-    let mut history = use_signal(|| vec![]);
+    let history = use_server_future(move || {
+        let end = NaiveDate::parse_from_str(&date(), "%Y-%m-%d").unwrap();
+        let end = NaiveDateTime::from(end);
+        let end = Local.from_local_datetime(&end).unwrap().timestamp();
+        let start = end + 24 * 60 * 60;
+        async move { get_stats(0, 60 * 24, start, end).await.unwrap_or_default() }
+    })?;
 
     use_future(move || async move {
         loop {
@@ -23,18 +30,7 @@ pub fn PingHistory() -> Element {
         }
     });
 
-    use_memo(move || {
-        let end = NaiveDate::parse_from_str(&date(), "%Y-%m-%d").unwrap();
-        let end = NaiveDateTime::from(end);
-        let end = Local.from_local_datetime(&end).unwrap().timestamp();
-        let start = end + 24 * 60 * 60;
-        spawn(async move {
-            if let Ok(h) = get_stats(0, 60 * 24, start, end).await {
-                history.set(h);
-            }
-        });
-    });
-
+    let history = history().unwrap_or_default();
     let lines = vec![
         Line {
             color: "oklch(var(--su))".into(),
@@ -89,7 +85,7 @@ pub fn PingHistory() -> Element {
     }
 }
 
-#[server]
+#[server(endpoint = "/history", input = GetUrl)]
 async fn get_stats(
     offset: usize,
     count: usize,
