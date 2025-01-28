@@ -85,7 +85,8 @@ pub fn LinePlot(
     };
 
     rsx! {
-        svg { class: "w-full",
+        svg {
+            class: "w-full",
             view_box: "0 0 {width} {height}",
             xmlns: "http://www.w3.org/2000/svg",
             rect {
@@ -128,15 +129,19 @@ pub fn LinePlot(
                 name: "x-axis",
                 font_size: "0.6em",
                 text_anchor: "middle",
-                dominant_baseline: "hanging",
                 fill: "oklch(var(--bc))",
                 path {
                     d: "M {bb.min_x()} {bb.max_y()} L {bb.max_x()} {bb.max_y()}",
                     stroke: "oklch(var(--bc))",
                     "stroke-width": "1",
                 }
-                for (t , val) in x_ax.ticks.iter().map(|&t| (t, to_cord((t, 0.0)).0)) {
-                    text { x: val, y: "{bb.max_y() + 2.0 * tick_size}", "{x_trans(t)}" }
+                for (t, val) in x_ax.ticks.iter().map(|&t| (t, to_cord((t, 0.0)).0)) {
+                    text {
+                        dominant_baseline: "hanging",
+                        x: val,
+                        y: "{bb.max_y() + 2.0 * tick_size}",
+                        "{x_trans(t)}"
+                    }
                     path {
                         d: "M {val} {bb.max_y()} L {val} {bb.max_y() + tick_size}",
                         stroke: "oklch(var(--bc))",
@@ -148,15 +153,19 @@ pub fn LinePlot(
                 name: "y-axis",
                 font_size: "0.6em",
                 text_anchor: "end",
-                dominant_baseline: "middle",
                 fill: "oklch(var(--bc))",
                 path {
                     d: "M {bb.min_x()} {bb.max_y()} L {bb.min_x()} {bb.min_y()}",
                     stroke: "oklch(var(--bc))",
                     "stroke-width": "1",
                 }
-                for (t , val) in y_ax.ticks.iter().map(|&t| (t, to_cord((0.0, t)).1)) {
-                    text { x: "{bb.min_x() - 2.0 * tick_size}", y: val, "{y_trans(t)}" }
+                for (t, val) in y_ax.ticks.iter().map(|&t| (t, to_cord((0.0, t)).1)) {
+                    text {
+                        dominant_baseline: "middle",
+                        x: "{bb.min_x() - 2.0 * tick_size}",
+                        y: val,
+                        "{y_trans(t)}"
+                    }
                     path {
                         d: "M {bb.min_x() - tick_size} {val} L {bb.min_x()} {val}",
                         stroke: "oklch(var(--bc))",
@@ -165,6 +174,7 @@ pub fn LinePlot(
                 }
             }
         }
+
     }
 }
 

@@ -7,6 +7,10 @@ use std::fs::{self, read_dir};
 use std::path::Path;
 
 pub fn accumulate(pings: &[Ping], time: i64) -> PingStats {
+    if pings.is_empty() {
+        return PingStats::default();
+    }
+
     let mut stats = pings.into_iter().fold(
         PingStats {
             time,
